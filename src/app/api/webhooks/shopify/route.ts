@@ -2,6 +2,21 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
+function normalizeShopDomain(input: string | undefined): string {
+  return (input ?? "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+function isExpectedShopDomain(request: NextRequest): boolean {
+  const expectedDomain = normalizeShopDomain(process.env.SHOPIFY_STORE_DOMAIN);
+  const incomingDomain = normalizeShopDomain(request.headers.get("x-shopify-shop-domain") ?? undefined);
+
+  if (!expectedDomain || !incomingDomain) {
+    return false;
+  }
+
+  return expectedDomain === incomingDomain;
+}
+
 /**
  * Verify the HMAC-SHA256 signature that Shopify sends with every webhook.
  * Returns true when the signature is valid and the secret is configured.
@@ -19,9 +34,15 @@ async function verifyShopifyWebhook(request: NextRequest, rawBody: Buffer): Prom
   }
 
   const digest = createHmac("sha256", secret).update(rawBody).digest("base64");
+  const digestBuffer = Buffer.from(digest, "base64");
+  const hmacBuffer = Buffer.from(shopifyHmac, "base64");
 
   try {
-    return timingSafeEqual(Buffer.from(digest), Buffer.from(shopifyHmac));
+    if (digestBuffer.length !== hmacBuffer.length) {
+      return false;
+    }
+
+    return timingSafeEqual(digestBuffer, hmacBuffer);
   } catch {
     return false;
   }
@@ -44,6 +65,11 @@ type ShopifyWebhookPayload = {
  */
 export async function POST(request: NextRequest) {
   const topic = request.headers.get("x-shopify-topic") ?? "";
+
+  if (!isExpectedShopDomain(request)) {
+    console.error(`[Webhook] Rejected ${topic} request — unexpected shop domain.`);
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   // Read the raw body bytes for HMAC verification before parsing JSON.
   const rawBodyBuffer = Buffer.from(await request.arrayBuffer());
@@ -79,7 +105,7 @@ export async function POST(request: NextRequest) {
   // (e.g. "gid://shopify/Cart/TOKEN" contains "TOKEN").
   const order = await db.order.findFirst({
     where: {
-      shopifyCartId: { contains: cartToken },
+      shopifyCartId: { endsWith: cartToken },
     },
   });
 

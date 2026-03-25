@@ -75,6 +75,13 @@ function buildRateLimitHeaders(result: RateLimitResult): Record<string, string> 
   };
 }
 
+function withSecurityHeaders(headers: Record<string, string>): Record<string, string> {
+  return {
+    ...headers,
+    "Cache-Control": "private, no-store, max-age=0",
+  };
+}
+
 function applyRateLimit(request: NextRequest): RateLimitResult {
   const now = Date.now();
   maybeCleanupExpiredWindows(now);
@@ -137,7 +144,7 @@ export async function GET(request: NextRequest) {
       { error: "Too many requests. Please retry shortly." },
       {
         status: 429,
-        headers: rateLimitHeaders,
+        headers: withSecurityHeaders(rateLimitHeaders),
       },
     );
   }
@@ -148,7 +155,7 @@ export async function GET(request: NextRequest) {
   if (!orderId || !email) {
     return NextResponse.json(
       { error: "Both orderId and email are required." },
-      { status: 400, headers: rateLimitHeaders },
+      { status: 400, headers: withSecurityHeaders(rateLimitHeaders) },
     );
   }
 
@@ -167,7 +174,7 @@ export async function GET(request: NextRequest) {
   if (!order || order.customerEmail.trim().toLowerCase() !== email) {
     return NextResponse.json(
       { error: "Order not found for the provided details." },
-      { status: 404, headers: rateLimitHeaders },
+      { status: 404, headers: withSecurityHeaders(rateLimitHeaders) },
     );
   }
 
@@ -193,6 +200,6 @@ export async function GET(request: NextRequest) {
         statusHistory: order.statusHistory,
       },
     },
-    { headers: rateLimitHeaders },
+    { headers: withSecurityHeaders(rateLimitHeaders) },
   );
 }
