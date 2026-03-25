@@ -1,0 +1,77 @@
+.menu-page {
+  padding-bottom: 80px;
+}
+
+.menu-hero {
+  background: linear-gradient(135deg, var(--dark) 0%, #2d1b69 100%);
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--white);
+  margin-bottom: 40px;
+}
+
+.menu-hero h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.menu-hero p {
+  font-size: 1.1rem;
+  opacity: 0.85;
+}
+
+.category-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 4px 0;
+}
+
+.category-tab {
+  padding: 10px 22px;
+  border-radius: 25px;
+  border: 2px solid #e5e7eb;
+  background: var(--white);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.category-tab:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.category-tab.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--white);
+  font-weight: 600;
+}
+
+.menu-count {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .menu-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .menu-grid {
+    grid-template-columns: 1fr;
+  }
+}
