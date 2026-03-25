@@ -15,6 +15,16 @@ export async function GET(request: NextRequest) {
 
   const items = await db.foodItem.findMany({
     orderBy: [{ category: "asc" }, { name: "asc" }],
+    include: {
+      modifierGroups: {
+        orderBy: { displayOrder: "asc" },
+        include: {
+          modifiers: {
+            orderBy: { displayOrder: "asc" },
+          },
+        },
+      },
+    },
   });
 
   return NextResponse.json({ items });

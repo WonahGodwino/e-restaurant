@@ -45,6 +45,34 @@ model FoodItem {
   updatedAt         DateTime       @updatedAt
   orderItems        OrderItem[]
   notifications     Notification[]
+  modifierGroups    ModifierGroup[]
+}
+
+model ModifierGroup {
+  id            String     @id @default(cuid())
+  foodItemId    String
+  name          String
+  isRequired    Boolean    @default(false)
+  allowMultiple Boolean    @default(false)
+  displayOrder  Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  foodItem  FoodItem   @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+  modifiers Modifier[]
+}
+
+model Modifier {
+  id              String        @id @default(cuid())
+  modifierGroupId String
+  name            String
+  priceDeltaPence Int           @default(0)
+  isDefault       Boolean       @default(false)
+  displayOrder    Int           @default(0)
+  createdAt       DateTime      @default(now())
+
+  modifierGroup      ModifierGroup       @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+  orderItemModifiers OrderItemModifier[]
 }
 
 model Order {
@@ -74,8 +102,21 @@ model OrderItem {
   lineTotalPence Int
   createdAt      DateTime @default(now())
 
-  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  foodItem FoodItem @relation(fields: [foodItemId], references: [id])
+  order     Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  foodItem  FoodItem           @relation(fields: [foodItemId], references: [id])
+  modifiers OrderItemModifier[]
+}
+
+model OrderItemModifier {
+  id              String @id @default(cuid())
+  orderItemId     String
+  modifierId      String
+  modifierName    String
+  groupName       String
+  priceDeltaPence Int
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  modifier  Modifier  @relation(fields: [modifierId], references: [id])
 }
 
 model User {

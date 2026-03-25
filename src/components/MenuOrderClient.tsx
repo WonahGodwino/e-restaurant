@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/components/CartProvider";
+import ModifierSelectorModal from "@/components/ModifierSelectorModal";
 import type { MenuItem } from "@/types";
+import type { SelectedModifier } from "@/components/CartProvider";
 import { formatGBP } from "@/lib/currency";
 
 type Props = {
@@ -13,6 +15,7 @@ type Props = {
 
 export default function MenuOrderClient({ items }: Props) {
   const { addItem, items: cartItems, subtotalPence, updateQuantity, totalItems } = useCart();
+  const [pendingItem, setPendingItem] = useState<MenuItem | null>(null);
 
   const grouped = useMemo(() => {
     const result: Record<string, MenuItem[]> = {};
@@ -25,8 +28,31 @@ export default function MenuOrderClient({ items }: Props) {
     return result;
   }, [items]);
 
+  function handleAddToBasket(entry: MenuItem) {
+    if (entry.modifierGroups && entry.modifierGroups.length > 0) {
+      setPendingItem(entry);
+    } else {
+      addItem(entry);
+    }
+  }
+
+  function handleModifierConfirm(selectedModifiers: SelectedModifier[]) {
+    if (pendingItem) {
+      addItem(pendingItem, selectedModifiers);
+      setPendingItem(null);
+    }
+  }
+
   return (
     <div id="order-section" className="grid gap-8 lg:grid-cols-[1.7fr_0.92fr]">
+      {pendingItem && (
+        <ModifierSelectorModal
+          item={pendingItem}
+          onConfirm={handleModifierConfirm}
+          onClose={() => setPendingItem(null)}
+        />
+      )}
+
       <section className="space-y-10">
         {Object.entries(grouped).map(([category, entries]) => (
           <div key={category} className="space-y-4" id={`category-${category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
@@ -40,77 +66,93 @@ export default function MenuOrderClient({ items }: Props) {
               </span>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              {entries.map((entry, index) => (
-                <article
-                  key={entry.id}
-                  className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-[rgba(11,19,32,0.84)] shadow-[0_24px_60px_rgba(2,6,23,0.28)] backdrop-blur"
-                >
-                  {entry.imageUrl ? (
-                    <div className="overflow-hidden border-b border-white/8">
-                      <Image
-                        src={entry.imageUrl}
-                        alt={entry.name}
-                        width={480}
-                        height={270}
-                        loading={index === 0 ? "eager" : "lazy"}
-                        priority={index === 0}
-                        className="h-48 w-full object-cover transition duration-500 hover:scale-[1.03]"
-                      />
-                    </div>
-                  ) : null}
-                  <div className="p-5">
-                    {(() => {
-                      const cartEntry = cartItems.find((item) => item.id === entry.id);
-                      const quantity = cartEntry?.quantity ?? 0;
+              {entries.map((entry, index) => {
+                // Sum up all quantities for this food item across all cart entries (diff modifiers)
+                const cartEntriesForItem = cartItems.filter((item) => item.id === entry.id);
+                const totalQty = cartEntriesForItem.reduce((s, e) => s + e.quantity, 0);
+                // For +/- controls we work with the first matching cart entry (no-modifier)
+                const simpleCartEntry = cartItems.find((item) => item.cartKey === entry.id);
+                const simpleQty = simpleCartEntry?.quantity ?? 0;
 
-                      return (
-                        <>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">{entry.name}</h3>
-                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/42">{entry.category}</p>
+                return (
+                  <article
+                    key={entry.id}
+                    className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-[rgba(11,19,32,0.84)] shadow-[0_24px_60px_rgba(2,6,23,0.28)] backdrop-blur"
+                  >
+                    {entry.imageUrl ? (
+                      <div className="overflow-hidden border-b border-white/8">
+                        <Image
+                          src={entry.imageUrl}
+                          alt={entry.name}
+                          width={480}
+                          height={270}
+                          loading={index === 0 ? "eager" : "lazy"}
+                          priority={index === 0}
+                          className="h-48 w-full object-cover transition duration-500 hover:scale-[1.03]"
+                        />
                       </div>
-                      <span className="rounded-full border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-3 py-1 text-xs font-semibold text-[var(--cream)]">
-                        {formatGBP(entry.pricePence)}
-                      </span>
+                    ) : null}
+                    <div className="p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">{entry.name}</h3>
+                          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/42">{entry.category}</p>
+                        </div>
+                        <span className="rounded-full border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-3 py-1 text-xs font-semibold text-[var(--cream)]">
+                          {formatGBP(entry.pricePence)}
+                        </span>
+                      </div>
+
+                      <p className="mt-4 text-sm leading-7 text-white/68">{entry.description}</p>
+                      {entry.modifierGroups && entry.modifierGroups.length > 0 ? (
+                        <p className="mt-2 text-xs text-white/45">
+                          Customisable · {entry.modifierGroups.length} option group{entry.modifierGroups.length === 1 ? "" : "s"}
+                        </p>
+                      ) : null}
+                      <p className="mt-4 text-xs font-medium uppercase tracking-[0.18em] text-white/45">
+                        Available now: {entry.stockQuantity}
+                      </p>
+
+                      <div className="mt-5 flex items-center gap-3">
+                        {/* +/- only available for plain (no-modifier) entries */}
+                        {!entry.modifierGroups?.length && (
+                          <>
+                            <button
+                              type="button"
+                              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/6 text-lg text-white transition hover:bg-white/10"
+                              onClick={() => updateQuantity(entry.id, simpleQty - 1)}
+                            >
+                              -
+                            </button>
+                            <span className="min-w-10 text-center text-base font-semibold text-white">{simpleQty}</span>
+                            <button
+                              type="button"
+                              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/6 text-lg text-white transition hover:bg-white/10"
+                              onClick={() => updateQuantity(entry.id, simpleQty + 1)}
+                            >
+                              +
+                            </button>
+                          </>
+                        )}
+
+                        <button
+                          type="button"
+                          className="ml-auto rounded-full bg-[var(--accent-strong)] px-4 py-2 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(240,90,40,0.22)] transition hover:-translate-y-0.5 hover:brightness-105"
+                          onClick={() => handleAddToBasket(entry)}
+                        >
+                          {entry.modifierGroups?.length
+                            ? totalQty > 0
+                              ? `Customise & add more (${totalQty})`
+                              : "Customise & add"
+                            : totalQty > 0
+                              ? `Add more (${totalQty})`
+                              : "Add to basket"}
+                        </button>
+                      </div>
                     </div>
-
-                    <p className="mt-4 text-sm leading-7 text-white/68">{entry.description}</p>
-                    <p className="mt-4 text-xs font-medium uppercase tracking-[0.18em] text-white/45">
-                      Available now: {entry.stockQuantity}
-                    </p>
-
-                    <div className="mt-5 flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/6 text-lg text-white transition hover:bg-white/10"
-                      onClick={() => updateQuantity(entry.id, quantity - 1)}
-                    >
-                      -
-                    </button>
-                    <span className="min-w-10 text-center text-base font-semibold text-white">{quantity}</span>
-                    <button
-                      type="button"
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/6 text-lg text-white transition hover:bg-white/10"
-                      onClick={() => (quantity === 0 ? addItem(entry) : updateQuantity(entry.id, quantity + 1))}
-                    >
-                      +
-                    </button>
-
-                    <button
-                      type="button"
-                      className="ml-auto rounded-full bg-[var(--accent-strong)] px-4 py-2 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(240,90,40,0.22)] transition hover:-translate-y-0.5 hover:brightness-105"
-                      onClick={() => addItem(entry)}
-                    >
-                      {quantity > 0 ? `Add more (${quantity})` : "Add to basket"}
-                    </button>
-                    </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -130,12 +172,26 @@ export default function MenuOrderClient({ items }: Props) {
             </p>
           ) : (
             cartItems.map((entry) => (
-              <div key={entry.id} className="flex items-start justify-between gap-3 rounded-2xl border border-white/8 bg-white/4 p-4 text-sm">
-                <div>
-                  <p className="font-medium text-white">{entry.quantity} x {entry.name}</p>
-                  <p className="text-white/48">{formatGBP(entry.pricePence)} each</p>
+              <div key={entry.cartKey} className="rounded-2xl border border-white/8 bg-white/4 p-4 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-white">{entry.quantity} × {entry.name}</p>
+                    <p className="text-white/48">{formatGBP(entry.effectivePricePence)} each</p>
+                  </div>
+                  <span className="font-medium text-white">{formatGBP(entry.effectivePricePence * entry.quantity)}</span>
                 </div>
-                <span className="font-medium text-white">{formatGBP(entry.pricePence * entry.quantity)}</span>
+                {entry.selectedModifiers && entry.selectedModifiers.length > 0 && (
+                  <ul className="mt-2 space-y-0.5 border-t border-white/8 pt-2">
+                    {entry.selectedModifiers.map((mod) => (
+                      <li key={mod.modifierId} className="text-xs text-white/50">
+                        {mod.groupName}: {mod.modifierName}
+                        {mod.priceDeltaPence !== 0 && (
+                          <span className="ml-1">({mod.priceDeltaPence > 0 ? "+" : ""}{formatGBP(mod.priceDeltaPence)})</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ))
           )}
