@@ -1,0 +1,40 @@
+name: Feature request
+description: Track implementation of a new product feature
+title: "feat: "
+labels: ["feature"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What feature do we need?
+      placeholder: Describe the feature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user/business problem does this solve?
+      placeholder: Explain the problem and context.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Add a checklist of expected behavior
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical notes
+      description: APIs, DB migrations, env vars, rollout notes
+      placeholder: Optional implementation guidance.

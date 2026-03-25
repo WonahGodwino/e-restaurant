@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  COOK
+}
+
+enum NotificationType {
+  LOW_STOCK
+  NEW_ORDER
+  ORDER_STATUS_CHANGE
+}
+
+model FoodItem {
+  id                  String      @id @default(cuid())
+  name                String
+  description         String
+  category            String
+  pricePence          Int
+  stockQuantity       Int         @default(0)
+  lowStockThreshold   Int         @default(5)
+  imageUrl            String?
+  shopifyVariantId    String?
+  isAvailable         Boolean     @default(true)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  orderItems          OrderItem[]
+  notifications       Notification[]
+}
+
+model Order {
+  id                 String      @id @default(cuid())
+  customerName       String
+  customerEmail      String
+  customerPhone      String?
+  deliveryAddress    String
+  notes              String?
+  totalPence         Int
+  currency           String      @default("GBP")
+  status             OrderStatus @default(PENDING_PAYMENT)
+  shopifyCartId      String?
+  shopifyCheckoutUrl String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  items              OrderItem[]
+}
+
+model OrderItem {
+  id             String   @id @default(cuid())
+  orderId        String
+  foodItemId     String
+  itemName       String
+  unitPricePence Int
+  quantity       Int
+  lineTotalPence Int
+  createdAt      DateTime @default(now())
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  foodItem FoodItem @relation(fields: [foodItemId], references: [id])
+}
+
+model User {
+  id                      String   @id @default(cuid())
+  email                   String   @unique
+  name                    String
+  role                    UserRole
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  notificationPreferences NotificationPreference[]
+  notifications           Notification[]
+}
+
+model NotificationPreference {
+  id               String           @id @default(cuid())
+  userId           String
+  notificationType NotificationType
+  emailEnabled     Boolean          @default(true)
+  dashboardEnabled Boolean          @default(true)
+  isEnabled        Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationType])
+}
+
+model Notification {
+  id                String              @id @default(cuid())
+  userId            String
+  type              NotificationType
+  title             String
+  message           String
+  foodItemId        String?
+  orderId           String?
+  isRead            Boolean             @default(false)
+  emailSent         Boolean             @default(false)
+  emailSentAt       DateTime?
+  createdAt         DateTime            @default(now())
+  readAt            DateTime?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodItem FoodItem? @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+}
