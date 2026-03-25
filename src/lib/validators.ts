@@ -49,6 +49,8 @@ export const createOrderSchema = z.object({
   deliveryPostcode: z.string().trim().max(16).optional().or(z.literal("")),
   deliveryAddress: z.string().trim().max(400).optional().or(z.literal("")),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
+  orderType: z.enum(["ASAP", "SCHEDULED"]).optional().default("ASAP"),
+  scheduledFor: z.string().datetime().optional().or(z.literal("")),
   items: z
     .array(
       z.object({

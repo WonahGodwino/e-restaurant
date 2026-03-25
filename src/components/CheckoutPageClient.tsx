@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/components/CartProvider";
 import { formatGBP } from "@/lib/currency";
 
 const DELIVERY_PENCE = 399;
 
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+type OrderType = "ASAP" | "SCHEDULED";
 type FulfillmentType = "DELIVERY" | "PICKUP";
 
 type DeliveryQuote = {
@@ -39,6 +42,13 @@ export default function CheckoutPageClient() {
     address: "",
     notes: "",
   });
+  const [orderType, setOrderType] = useState<OrderType>("ASAP");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [serviceType, setServiceType] = useState<"delivery" | "pickup">("delivery");
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
   const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuote | null>(null);
   const [quotingDelivery, setQuotingDelivery] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +63,57 @@ export default function CheckoutPageClient() {
   }, [deliveryQuote?.deliveryFeePence, form.fulfillmentType]);
 
   const totalPence = useMemo(() => subtotalPence + deliveryFeePence, [deliveryFeePence, subtotalPence]);
+
+  // Build available date options: today + next 6 days
+  const dateOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    const now = new Date();
+    for (let i = 0; i < 7; i++) {
+      // Use millisecond arithmetic to avoid month boundary issues with setDate
+      const d = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      const value = `${yyyy}-${mm}-${dd}`;
+      const dayName = i === 0 ? "Today" : i === 1 ? "Tomorrow" : DAY_NAMES[d.getDay()];
+      options.push({ value, label: `${dayName} (${dd}/${mm})` });
+    }
+    return options;
+  }, []);
+
+  const fetchSlots = useCallback(
+    async (date: string, type: "delivery" | "pickup") => {
+      if (!date) return;
+      setSlotsLoading(true);
+      setSlotsError(null);
+      setSelectedSlot("");
+      try {
+        const res = await fetch(`/api/slots?date=${date}&type=${type}`);
+        const data = await res.json();
+        if (!res.ok) {
+          setSlotsError(data.error ?? "Could not load slots.");
+          setAvailableSlots([]);
+        } else {
+          setAvailableSlots(data.slots ?? []);
+          if (data.slots?.length === 0) {
+            setSlotsError("No available slots for this day. Please choose another date.");
+          }
+        }
+      } catch {
+        setSlotsError("Could not load slots.");
+        setAvailableSlots([]);
+      } finally {
+        setSlotsLoading(false);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (orderType === "SCHEDULED" && selectedDate) {
+      void fetchSlots(selectedDate, serviceType);
+    }
+  }, [orderType, selectedDate, serviceType, fetchSlots]);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -109,6 +170,17 @@ export default function CheckoutPageClient() {
       return;
     }
 
+    if (orderType === "SCHEDULED") {
+      if (!selectedDate) {
+        setError("Please select a date for your scheduled order.");
+        return;
+      }
+      if (!selectedSlot) {
+        setError("Please select a time slot for your scheduled order.");
+        return;
+      }
+    }
+
     if (form.fulfillmentType === "DELIVERY" && !form.address.trim()) {
       setError("Delivery address is required for delivery orders.");
       return;
@@ -129,6 +201,12 @@ export default function CheckoutPageClient() {
 
     setSubmitting(true);
 
+    // Build scheduledFor ISO string from date + slot
+    let scheduledFor: string | undefined;
+    if (orderType === "SCHEDULED" && selectedDate && selectedSlot) {
+      scheduledFor = new Date(`${selectedDate}T${selectedSlot}:00`).toISOString();
+    }
+
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
@@ -141,6 +219,8 @@ export default function CheckoutPageClient() {
           deliveryPostcode: form.deliveryPostcode,
           deliveryAddress: form.address,
           notes: form.notes,
+          orderType,
+          scheduledFor,
           items: items.map((item) => ({
             foodItemId: item.id,
             quantity: item.quantity,
@@ -251,6 +331,123 @@ export default function CheckoutPageClient() {
             <textarea value={form.notes} onChange={(event) => updateField("notes", event.target.value)} placeholder="Order notes" rows={3} className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35 sm:col-span-2" />
           </div>
 
+          {/* Order timing section */}
+          <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-white/4 p-5">
+            <h3 className="text-base font-semibold text-white">When would you like your order?</h3>
+
+            {/* ASAP / Scheduled toggle */}
+            <div className="mt-4 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setOrderType("ASAP")}
+                className={`flex-1 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                  orderType === "ASAP"
+                    ? "border-[var(--accent-strong)] bg-[var(--accent-strong)]/20 text-white"
+                    : "border-white/10 bg-white/4 text-white/60 hover:text-white"
+                }`}
+              >
+                🚀 ASAP
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrderType("SCHEDULED")}
+                className={`flex-1 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                  orderType === "SCHEDULED"
+                    ? "border-[var(--accent-strong)] bg-[var(--accent-strong)]/20 text-white"
+                    : "border-white/10 bg-white/4 text-white/60 hover:text-white"
+                }`}
+              >
+                📅 Schedule
+              </button>
+            </div>
+
+            {orderType === "ASAP" && (
+              <p className="mt-3 text-xs text-white/50">Your order will be prepared and dispatched as soon as possible.</p>
+            )}
+
+            {orderType === "SCHEDULED" && (
+              <div className="mt-4 space-y-4">
+                {/* Service type picker */}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setServiceType("delivery")}
+                    className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                      serviceType === "delivery"
+                        ? "border-blue-400 bg-blue-400/20 text-white"
+                        : "border-white/10 bg-white/4 text-white/60 hover:text-white"
+                    }`}
+                  >
+                    🚚 Delivery
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setServiceType("pickup")}
+                    className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                      serviceType === "pickup"
+                        ? "border-blue-400 bg-blue-400/20 text-white"
+                        : "border-white/10 bg-white/4 text-white/60 hover:text-white"
+                    }`}
+                  >
+                    🏃 Pickup
+                  </button>
+                </div>
+
+                {/* Date picker */}
+                <div>
+                  <label className="block text-xs font-medium text-white/60 mb-1">Select date</label>
+                  <select
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white"
+                  >
+                    <option value="">Choose a date…</option>
+                    {dateOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Slot picker */}
+                {selectedDate && (
+                  <div>
+                    <label className="block text-xs font-medium text-white/60 mb-1">Select time slot</label>
+                    {slotsLoading ? (
+                      <p className="text-xs text-white/50">Loading available slots…</p>
+                    ) : slotsError ? (
+                      <p className="text-xs text-red-300">{slotsError}</p>
+                    ) : availableSlots.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {availableSlots.map((slot) => (
+                          <button
+                            key={slot}
+                            type="button"
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                              selectedSlot === slot
+                                ? "border-[var(--accent-strong)] bg-[var(--accent-strong)]/20 text-white"
+                                : "border-white/10 bg-white/4 text-white/60 hover:text-white"
+                            }`}
+                          >
+                            {slot}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
+                {selectedDate && selectedSlot && (
+                  <p className="text-xs font-medium text-emerald-300">
+                    ✓ Scheduled for {selectedDate} at {selectedSlot}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           {error ? <p className="mt-4 text-sm text-red-300">{error}</p> : null}
 
           <div className="mt-6 grid gap-3 rounded-[1.5rem] border border-white/8 bg-white/4 p-4 text-sm text-white/66 sm:grid-cols-3">
@@ -298,6 +495,13 @@ export default function CheckoutPageClient() {
             <div className="flex items-center justify-between"><span>{form.fulfillmentType === "DELIVERY" ? "Delivery" : "Pickup"}</span><span>{formatGBP(deliveryFeePence)}</span></div>
             <div className="flex items-center justify-between border-t border-white/10 pt-3 text-base font-semibold text-white"><span>Total</span><span>{formatGBP(totalPence)}</span></div>
           </div>
+
+          {orderType === "SCHEDULED" && selectedDate && selectedSlot && (
+            <div className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-300">
+              <span className="font-semibold">Scheduled {serviceType}:</span>{" "}
+              {selectedDate} at {selectedSlot}
+            </div>
+          )}
 
           <p className="mt-5 text-xs uppercase tracking-[0.18em] text-white/42">
             By placing an order, you agree to the terms, privacy, and fulfilment policies published on this site.

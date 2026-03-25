@@ -90,6 +90,8 @@ export async function POST(request: NextRequest) {
           deliveryPostcode?: unknown;
           deliveryAddress?: unknown;
           notes?: unknown;
+          orderType?: unknown;
+          scheduledFor?: unknown;
           items?: unknown;
         };
 
@@ -163,6 +165,9 @@ export async function POST(request: NextRequest) {
           deliveryPostcode,
           deliveryAddress,
           notes,
+          orderType: source.orderType === "SCHEDULED" ? "SCHEDULED" as const : "ASAP" as const,
+          scheduledFor:
+            typeof source.scheduledFor === "string" && source.scheduledFor ? source.scheduledFor : "",
           items,
         };
       })();
@@ -320,6 +325,11 @@ export async function POST(request: NextRequest) {
           deliveryFeePence,
           notes: input.notes || null,
           totalPence,
+          orderType: input.orderType ?? "ASAP",
+          scheduledFor:
+            input.orderType === "SCHEDULED" && input.scheduledFor
+              ? new Date(input.scheduledFor)
+              : null,
           shopifyCartId,
           shopifyCheckoutUrl,
           items: {

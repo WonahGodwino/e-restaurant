@@ -5,6 +5,7 @@ import AdminDashboard from "@/components/AdminDashboard";
 import AdminOrdersPanel from "@/components/AdminOrdersPanel";
 import NotificationPanel from "@/components/NotificationPanel";
 import UserManagementPanel from "@/components/UserManagementPanel";
+import ServiceWindowsPanel from "@/components/ServiceWindowsPanel";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import NotificationDashboard from "@/components/NotificationDashboard";
 import ReservationsPanel from "@/components/ReservationsPanel";
@@ -19,7 +20,7 @@ export default function AdminPage() {
   });
 
   const [activeTab, setActiveTab] = useState<
-    "menu" | "orders" | "notifications" | "notif-dashboard" | "reservations" | "catering" | "users" | "audit"
+    "menu" | "orders" | "notifications" | "notif-dashboard" | "reservations" | "catering" | "users" | "audit" | "service-windows"
   >(
     "menu"
   );
@@ -191,6 +192,16 @@ export default function AdminPage() {
           Users
         </button>
         <button
+          onClick={() => setActiveTab("service-windows")}
+          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+            activeTab === "service-windows"
+              ? "border-b-2 border-green-600 text-green-600"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Service Windows
+        </button>
+        <button
           onClick={() => setActiveTab("audit")}
           className={`px-4 py-3 font-semibold whitespace-nowrap ${
             activeTab === "audit"
@@ -239,7 +250,9 @@ export default function AdminPage() {
         </div>
       )}
       {activeTab === "users" && <UserManagementPanel adminKey={adminKey} />}
+      {activeTab === "service-windows" && <ServiceWindowsPanel adminKey={adminKey} />}
       {activeTab === "audit" && <AuditLogViewer adminKey={adminKey} />}
+      {activeTab === "service-windows" && <ServiceWindowsPanel adminKey={adminKey} />}
     </div>
   );
 }
