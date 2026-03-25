@@ -128,6 +128,16 @@ export default function AdminPage() {
           Menu Items
         </button>
         <button
+          onClick={() => setActiveTab("orders")}
+          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+            activeTab === "orders"
+              ? "border-b-2 border-green-600 text-green-700"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Orders
+        </button>
+        <button
           onClick={() => setActiveTab("notifications")}
           className={`px-4 py-3 font-semibold whitespace-nowrap ${
             activeTab === "notifications"
@@ -191,6 +201,7 @@ export default function AdminPage() {
 
       {/* Tab Content */}
       {activeTab === "menu" && <AdminDashboard />}
+      {activeTab === "orders" && <OrdersPanel adminKey={adminKey} />}
         {activeTab === "notifications" && <NotificationPanel adminKey={adminKey} />}
       {activeTab === "notif-dashboard" && (
         <div className="space-y-4">
