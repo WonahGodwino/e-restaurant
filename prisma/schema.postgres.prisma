@@ -35,6 +35,9 @@ model FoodItem {
   pricePence        Int
   stockQuantity     Int            @default(0)
   lowStockThreshold Int            @default(5)
+  allergens         String[]       @default([])
+  dietaryTags       String[]       @default([])
+  crossContaminationNotes String?
   imageUrl          String?
   shopifyVariantId  String?
   isAvailable       Boolean        @default(true)

@@ -67,6 +67,28 @@ export default function MenuCatalogClient({ items }: { items: MenuItem[] }) {
                   </span>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-white/66">{item.description}</p>
+                {item.dietaryTags.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {item.dietaryTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-emerald-300/30 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-200"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                {item.allergens.length > 0 ? (
+                  <p className="mt-3 text-xs leading-6 text-rose-200/90">
+                    Allergens: {item.allergens.join(", ")}
+                  </p>
+                ) : null}
+                {item.crossContaminationNotes ? (
+                  <p className="mt-2 text-xs leading-6 text-amber-200/90">
+                    Cross-contamination notice: {item.crossContaminationNotes}
+                  </p>
+                ) : null}
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <span className="text-xs uppercase tracking-[0.18em] text-white/42">Stock: {item.stockQuantity}</span>
                   <button

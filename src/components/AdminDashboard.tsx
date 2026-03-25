@@ -5,6 +5,17 @@ import Image from "next/image";
 import { formatGBP } from "@/lib/currency";
 import type { MenuItem } from "@/types";
 
+function parseCommaSeparatedValues(input: string): string[] {
+  return Array.from(
+    new Set(
+      input
+        .split(",")
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  );
+}
+
 export default function AdminDashboard() {
   const [adminKey, setAdminKey] = useState(() => {
     if (typeof window === "undefined") {
@@ -22,6 +33,9 @@ export default function AdminDashboard() {
   const [category, setCategory] = useState("Main");
   const [priceGBP, setPriceGBP] = useState("");
   const [stockQuantity, setStockQuantity] = useState("0");
+  const [allergensInput, setAllergensInput] = useState("");
+  const [dietaryTagsInput, setDietaryTagsInput] = useState("");
+  const [crossContaminationNotes, setCrossContaminationNotes] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -118,6 +132,9 @@ export default function AdminDashboard() {
         category,
         pricePence: price,
         stockQuantity: initialStock,
+        allergens: parseCommaSeparatedValues(allergensInput),
+        dietaryTags: parseCommaSeparatedValues(dietaryTagsInput),
+        crossContaminationNotes,
         imageUrl: resolvedImageUrl,
         shopifyVariantId,
         isAvailable: true,
@@ -136,6 +153,9 @@ export default function AdminDashboard() {
     setDescription("");
     setPriceGBP("");
     setStockQuantity("0");
+    setAllergensInput("");
+    setDietaryTagsInput("");
+    setCrossContaminationNotes("");
     setImageUrl("");
     setImageFile(null);
     setShopifyVariantId("");
@@ -277,6 +297,25 @@ export default function AdminDashboard() {
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
           <input
+            value={allergensInput}
+            onChange={(event) => setAllergensInput(event.target.value)}
+            placeholder="Allergens (comma separated)"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+          />
+          <input
+            value={dietaryTagsInput}
+            onChange={(event) => setDietaryTagsInput(event.target.value)}
+            placeholder="Dietary tags (comma separated, e.g. halal, vegan)"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+          />
+          <textarea
+            value={crossContaminationNotes}
+            onChange={(event) => setCrossContaminationNotes(event.target.value)}
+            placeholder="Cross-contamination notes (optional)"
+            rows={2}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+          />
+          <input
             value={shopifyVariantId}
             onChange={(event) => setShopifyVariantId(event.target.value)}
             placeholder="Shopify variant GID"
@@ -350,6 +389,35 @@ export default function AdminDashboard() {
                               className="h-[72px] w-24 object-cover"
                             />
                           </div>
+                        ) : null}
+                        {item.allergens.length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {item.allergens.map((allergen) => (
+                              <span
+                                key={allergen}
+                                className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-rose-700"
+                              >
+                                {allergen}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                        {item.dietaryTags.length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {item.dietaryTags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-700"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                        {item.crossContaminationNotes ? (
+                          <p className="mt-2 max-w-md text-xs text-amber-700">
+                            Cross-contamination: {item.crossContaminationNotes}
+                          </p>
                         ) : null}
                         <p className="text-xs text-slate-500">
                           Shopify: {item.shopifyVariantId ? "Connected" : "Missing variant ID"}

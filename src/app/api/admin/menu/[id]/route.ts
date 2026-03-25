@@ -38,6 +38,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       ...(input.category !== undefined ? { category: input.category } : {}),
       ...(input.pricePence !== undefined ? { pricePence: input.pricePence } : {}),
       ...(input.stockQuantity !== undefined ? { stockQuantity: input.stockQuantity } : {}),
+      ...(input.allergens !== undefined ? { allergens: input.allergens } : {}),
+      ...(input.dietaryTags !== undefined ? { dietaryTags: input.dietaryTags } : {}),
+      ...(input.crossContaminationNotes !== undefined
+        ? { crossContaminationNotes: input.crossContaminationNotes || null }
+        : {}),
       ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl || null } : {}),
       ...(input.shopifyVariantId !== undefined
         ? { shopifyVariantId: input.shopifyVariantId || null }
