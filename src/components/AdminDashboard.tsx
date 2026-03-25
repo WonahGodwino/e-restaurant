@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import Image from "next/image";
 import { formatGBP } from "@/lib/currency";
+import AdminModifierPanel from "@/components/AdminModifierPanel";
 import type { MenuItem } from "@/types";
 
 function parseCommaSeparatedValues(input: string): string[] {
@@ -42,6 +43,7 @@ export default function AdminDashboard() {
   const [shopifyVariantId, setShopifyVariantId] = useState("");
   const [isAgeRestricted, setIsAgeRestricted] = useState(false);
   const [topUpValues, setTopUpValues] = useState<Record<string, string>>({});
+  const [expandedModifierItem, setExpandedModifierItem] = useState<string | null>(null);
 
   async function loadItems(keyToUse = adminKey) {
     if (!keyToUse) return;
@@ -409,98 +411,112 @@ export default function AdminDashboard() {
                   {entries.map((item) => (
                     <div
                       key={item.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3"
+                      className="rounded-lg border border-slate-200 p-3"
                     >
-                      <div>
-                        <p className="font-medium text-slate-900">{item.name}</p>
-                        <p className="text-sm text-slate-600">{formatGBP(item.pricePence)}</p>
-                        <p className="text-xs font-medium text-slate-700">
-                          In stock: {item.stockQuantity}
-                        </p>
-                        {item.imageUrl ? (
-                          <div className="mt-2 overflow-hidden rounded-md border border-slate-200">
-                            <Image
-                              src={item.imageUrl}
-                              alt={item.name}
-                              width={96}
-                              height={72}
-                              className="h-[72px] w-24 object-cover"
-                            />
-                          </div>
-                        ) : null}
-                        {item.allergens.length > 0 ? (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {item.allergens.map((allergen) => (
-                              <span
-                                key={allergen}
-                                className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-rose-700"
-                              >
-                                {allergen}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-                        {item.dietaryTags.length > 0 ? (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {item.dietaryTags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-700"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-                        {item.crossContaminationNotes ? (
-                          <p className="mt-2 max-w-md text-xs text-amber-700">
-                            Cross-contamination: {item.crossContaminationNotes}
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-slate-900">{item.name}</p>
+                          <p className="text-sm text-slate-600">{formatGBP(item.pricePence)}</p>
+                          <p className="text-xs font-medium text-slate-700">
+                            In stock: {item.stockQuantity}
                           </p>
-                        ) : null}
-                        {item.isAgeRestricted ? (
-                          <p className="mt-2 text-xs font-semibold text-amber-700">🔞 Age-restricted item</p>
-                        ) : null}
-                        <p className="text-xs text-slate-500">
-                          Shopify: {item.shopifyVariantId ? "Connected" : "Missing variant ID"}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => toggleAvailability(item)}
-                        className={`rounded-lg px-3 py-2 text-xs font-semibold text-white ${
-                          item.isAvailable ? "bg-orange-600" : "bg-emerald-700"
-                        }`}
-                      >
-                        {item.isAvailable ? "Mark unavailable" : "Mark available"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void toggleAgeRestricted(item)}
-                        className={`rounded-lg px-3 py-2 text-xs font-semibold text-white ${
-                          item.isAgeRestricted ? "bg-slate-600" : "bg-amber-700"
-                        }`}
-                      >
-                        {item.isAgeRestricted ? "Remove age restriction" : "Mark 18+ restricted"}
-                      </button>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={1}
-                          value={topUpValues[item.id] ?? ""}
-                          onChange={(event) =>
-                            setTopUpValues((prev) => ({ ...prev, [item.id]: event.target.value }))
-                          }
-                          placeholder="Top up qty"
-                          className="w-28 rounded-lg border border-slate-300 px-2 py-2 text-xs"
-                        />
+                          {item.imageUrl ? (
+                            <div className="mt-2 overflow-hidden rounded-md border border-slate-200">
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.name}
+                                width={96}
+                                height={72}
+                                className="h-[72px] w-24 object-cover"
+                              />
+                            </div>
+                          ) : null}
+                          {item.allergens.length > 0 ? (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {item.allergens.map((allergen) => (
+                                <span
+                                  key={allergen}
+                                  className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-rose-700"
+                                >
+                                  {allergen}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+                          {item.dietaryTags.length > 0 ? (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {item.dietaryTags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-700"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+                          {item.crossContaminationNotes ? (
+                            <p className="mt-2 max-w-md text-xs text-amber-700">
+                              Cross-contamination: {item.crossContaminationNotes}
+                            </p>
+                          ) : null}
+                          <p className="text-xs text-slate-500">
+                            Shopify: {item.shopifyVariantId ? "Connected" : "Missing variant ID"}
+                          </p>
+                          {item.modifierGroups && item.modifierGroups.length > 0 ? (
+                            <p className="mt-1 text-xs font-medium text-purple-700">
+                              {item.modifierGroups.length} modifier group{item.modifierGroups.length === 1 ? "" : "s"}
+                            </p>
+                          ) : null}
+                        </div>
                         <button
                           type="button"
-                          onClick={() => void topUpItem(item)}
-                          className="rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white"
+                          onClick={() => toggleAvailability(item)}
+                          className={`rounded-lg px-3 py-2 text-xs font-semibold text-white ${
+                            item.isAvailable ? "bg-orange-600" : "bg-emerald-700"
+                          }`}
                         >
-                          Top up
+                          {item.isAvailable ? "Mark unavailable" : "Mark available"}
+                        </button>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={1}
+                            value={topUpValues[item.id] ?? ""}
+                            onChange={(event) =>
+                              setTopUpValues((prev) => ({ ...prev, [item.id]: event.target.value }))
+                            }
+                            placeholder="Top up qty"
+                            className="w-28 rounded-lg border border-slate-300 px-2 py-2 text-xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void topUpItem(item)}
+                            className="rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white"
+                          >
+                            Top up
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedModifierItem((prev) => (prev === item.id ? null : item.id))
+                          }
+                          className="rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-100"
+                        >
+                          {expandedModifierItem === item.id ? "Hide modifiers" : "Manage modifiers"}
                         </button>
                       </div>
+
+                      {expandedModifierItem === item.id && (
+                        <div className="mt-3 border-t border-slate-200 pt-3">
+                          <AdminModifierPanel
+                            adminKey={adminKey}
+                            item={item}
+                            onUpdated={() => void loadItems()}
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

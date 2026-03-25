@@ -8,6 +8,16 @@ export default async function Home() {
   const items = await db.foodItem.findMany({
     where: { isAvailable: true, stockQuantity: { gt: 0 } },
     orderBy: [{ category: "asc" }, { name: "asc" }],
+    include: {
+      modifierGroups: {
+        orderBy: { displayOrder: "asc" },
+        include: {
+          modifiers: {
+            orderBy: { displayOrder: "asc" },
+          },
+        },
+      },
+    },
   });
 
   const featuredItems = items.slice(0, 4);

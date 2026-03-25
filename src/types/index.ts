@@ -1,3 +1,20 @@
+export type Modifier = {
+  id: string;
+  name: string;
+  priceDeltaPence: number;
+  isDefault: boolean;
+  displayOrder: number;
+};
+
+export type ModifierGroup = {
+  id: string;
+  name: string;
+  isRequired: boolean;
+  allowMultiple: boolean;
+  displayOrder: number;
+  modifiers: Modifier[];
+};
+
 export type MenuItem = {
   id: string;
   name: string;
@@ -13,4 +30,5 @@ export type MenuItem = {
   shopifyVariantId: string | null;
   isAvailable: boolean;
   isAgeRestricted: boolean;
+  modifierGroups: ModifierGroup[];
 };

@@ -8,20 +8,41 @@ type CartProduct = Pick<
   "id" | "name" | "description" | "category" | "pricePence" | "imageUrl" | "stockQuantity" | "isAgeRestricted"
 >;
 
+export type SelectedModifier = {
+  modifierId: string;
+  modifierName: string;
+  groupName: string;
+  priceDeltaPence: number;
+};
+
 export type CartItem = CartProduct & {
+  cartKey: string;
   quantity: number;
+  selectedModifiers: SelectedModifier[];
+  effectivePricePence: number;
 };
 
 type CartContextValue = {
   items: CartItem[];
   totalItems: number;
   subtotalPence: number;
-  addItem: (item: CartProduct) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  addItem: (item: CartProduct, selectedModifiers?: SelectedModifier[]) => void;
+  updateQuantity: (cartKey: string, quantity: number) => void;
   clearCart: () => void;
 };
 
 const STORAGE_KEY = "e-restaurant-cart";
+
+function buildCartKey(id: string, selectedModifiers: SelectedModifier[]): string {
+  if (selectedModifiers.length === 0) {
+    return id;
+  }
+  const modKey = selectedModifiers
+    .map((m) => m.modifierId)
+    .sort()
+    .join(",");
+  return `${id}:${modKey}`;
+}
 
 const CartContext = createContext<CartContextValue | null>(null);
 
@@ -55,34 +76,52 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<CartContextValue>(() => {
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-    const subtotalPence = items.reduce((sum, item) => sum + item.pricePence * item.quantity, 0);
+    const subtotalPence = items.reduce(
+      (sum, item) => sum + item.effectivePricePence * item.quantity,
+      0,
+    );
 
     return {
       items,
       totalItems,
       subtotalPence,
-      addItem(item) {
+      addItem(item, selectedModifiers = []) {
+        const modifierDelta = selectedModifiers.reduce((s, m) => s + m.priceDeltaPence, 0);
+        const effectivePricePence = item.pricePence + modifierDelta;
+        const cartKey = buildCartKey(item.id, selectedModifiers);
+
         setItems((current) => {
-          const existing = current.find((entry) => entry.id === item.id);
+          const existing = current.find((entry) => entry.cartKey === cartKey);
           if (existing) {
             return current.map((entry) =>
-              entry.id === item.id
+              entry.cartKey === cartKey
                 ? { ...entry, quantity: entry.quantity + 1, stockQuantity: item.stockQuantity }
                 : entry,
             );
           }
 
-          return [...current, { ...item, quantity: 1 }];
+          return [
+            ...current,
+            {
+              ...item,
+              cartKey,
+              quantity: 1,
+              selectedModifiers,
+              effectivePricePence,
+            },
+          ];
         });
       },
-      updateQuantity(id, quantity) {
+      updateQuantity(cartKey, quantity) {
         setItems((current) => {
           if (quantity <= 0) {
-            return current.filter((entry) => entry.id !== id);
+            return current.filter((entry) => entry.cartKey !== cartKey);
           }
 
           return current.map((entry) =>
-            entry.id === id ? { ...entry, quantity: Math.min(quantity, entry.stockQuantity || quantity) } : entry,
+            entry.cartKey === cartKey
+              ? { ...entry, quantity: Math.min(quantity, entry.stockQuantity || quantity) }
+              : entry,
           );
         });
       },
