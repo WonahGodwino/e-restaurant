@@ -6,6 +6,9 @@ import NotificationPanel from "@/components/NotificationPanel";
 import UserManagementPanel from "@/components/UserManagementPanel";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import NotificationDashboard from "@/components/NotificationDashboard";
+import ReservationsPanel from "@/components/ReservationsPanel";
+import CateringPanel from "@/components/CateringPanel";
+
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState(() => {
     if (typeof window === "undefined") {
@@ -84,7 +87,7 @@ export default function AdminPage() {
           </div>
         </div>
         <p className="mt-2 text-sm text-slate-200">
-          Manage menu items, monitor stock, set notifications, and manage users.
+          Manage menu items, monitor stock, set notifications, manage users, reservations and catering requests.
         </p>
       </header>
 
@@ -145,6 +148,26 @@ export default function AdminPage() {
           Notif Dashboard {unreadCount > 0 ? `(${unreadCount})` : ""}
         </button>
         <button
+          onClick={() => setActiveTab("reservations")}
+          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+            activeTab === "reservations"
+              ? "border-b-2 border-teal-600 text-teal-600"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Reservations
+        </button>
+        <button
+          onClick={() => setActiveTab("catering")}
+          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+            activeTab === "catering"
+              ? "border-b-2 border-indigo-600 text-indigo-600"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Catering
+        </button>
+        <button
           onClick={() => setActiveTab("users")}
           className={`px-4 py-3 font-semibold whitespace-nowrap ${
             activeTab === "users"
@@ -189,6 +212,16 @@ export default function AdminPage() {
           {selectedUserId && (
             <NotificationDashboard adminKey={adminKey} userId={selectedUserId} />
           )}
+        </div>
+      )}
+      {activeTab === "reservations" && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <ReservationsPanel adminKey={adminKey} />
+        </div>
+      )}
+      {activeTab === "catering" && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <CateringPanel adminKey={adminKey} />
         </div>
       )}
       {activeTab === "users" && <UserManagementPanel adminKey={adminKey} />}

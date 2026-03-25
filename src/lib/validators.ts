@@ -85,8 +85,39 @@ export const contactFormSchema = z.object({
   message: z.string().trim().min(10).max(2000),
 });
 
+export const createReservationSchema = z.object({
+  customerName: z.string().trim().min(2).max(120),
+  customerEmail: z.string().trim().email(),
+  customerPhone: z.string().trim().max(30).optional().or(z.literal("")),
+  partySize: z.number().int().min(1).max(500),
+  date: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+  time: z.string().trim().regex(/^\d{2}:\d{2}$/, "Time must be in HH:MM format"),
+  specialRequests: z.string().trim().max(1000).optional().or(z.literal("")),
+});
+
+export const updateReservationStatusSchema = z.object({
+  status: z.enum(["PENDING", "CONFIRMED", "CANCELLED"]),
+});
+
+export const createCateringRequestSchema = z.object({
+  customerName: z.string().trim().min(2).max(120),
+  customerEmail: z.string().trim().email(),
+  customerPhone: z.string().trim().max(30).optional().or(z.literal("")),
+  eventType: z.string().trim().min(2).max(120),
+  eventDate: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+  guestCount: z.number().int().min(1).max(10000),
+  budget: z.string().trim().max(120).optional().or(z.literal("")),
+  notes: z.string().trim().max(2000).optional().or(z.literal("")),
+});
+
+export const updateCateringStatusSchema = z.object({
+  status: z.enum(["PENDING", "IN_REVIEW", "CONFIRMED", "CANCELLED"]),
+});
+
 export type CreateFoodItemInput = z.infer<typeof createFoodItemSchema>;
 export type UpdateFoodItemInput = z.infer<typeof updateFoodItemSchema>;
 export type TopUpStockInput = z.infer<typeof topUpStockSchema>;
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export type ContactFormInput = z.infer<typeof contactFormSchema>;
+export type CreateReservationInput = z.infer<typeof createReservationSchema>;
+export type CreateCateringRequestInput = z.infer<typeof createCateringRequestSchema>;
