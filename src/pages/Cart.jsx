@@ -17,7 +17,7 @@ export default function Cart() {
         <div className="cart-empty">
           <div className="cart-empty-icon">🛒</div>
           <h2>Your cart is empty</h2>
-          <p>Looks like you haven't added anything to your cart yet.</p>
+          <p>Looks like you haven&apos;t added anything to your cart yet.</p>
           <Link to="/menu" className="btn-primary">Browse Menu</Link>
         </div>
       </div>

@@ -169,7 +169,7 @@ export default function Checkout() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-icon">🎉</div>
             <h2>Order Placed!</h2>
-            <p>Your order has been placed! We'll deliver in 30-45 minutes.</p>
+            <p>Your order has been placed! We&apos;ll deliver in 30-45 minutes.</p>
             <button className="btn-primary modal-close" onClick={() => setShowModal(false)}>
               Back to Home
             </button>

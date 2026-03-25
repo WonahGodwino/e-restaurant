@@ -42,7 +42,16 @@ export const createOrderSchema = z.object({
     .min(1),
 });
 
+export const contactFormSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().email(),
+  phone: z.string().trim().max(30).optional().or(z.literal("")),
+  subject: z.string().trim().min(3).max(120),
+  message: z.string().trim().min(10).max(2000),
+});
+
 export type CreateFoodItemInput = z.infer<typeof createFoodItemSchema>;
 export type UpdateFoodItemInput = z.infer<typeof updateFoodItemSchema>;
 export type TopUpStockInput = z.infer<typeof topUpStockSchema>;
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
+export type ContactFormInput = z.infer<typeof contactFormSchema>;

@@ -27,12 +27,12 @@ export default function About() {
                 online destination for food lovers across the city.
               </p>
               <p>
-                We believe great food is more than just ingredients — it's about the love and care
+                We believe great food is more than just ingredients — it&apos;s about the love and care
                 that goes into every dish. Our chefs source fresh, local produce daily and craft
                 each recipe with the attention it deserves.
               </p>
               <p>
-                From our kitchen to your table, we're committed to delivering not just meals, but
+                From our kitchen to your table, we&apos;re committed to delivering not just meals, but
                 memorable dining experiences you can enjoy from the comfort of your home.
               </p>
             </div>

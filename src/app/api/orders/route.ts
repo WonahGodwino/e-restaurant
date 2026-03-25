@@ -3,7 +3,20 @@ import { db } from "@/lib/db";
 import { createShopifyCart } from "@/lib/shopify";
 import { createOrderSchema } from "@/lib/validators";
 import { notifyAllAdminsAndCooks } from "@/lib/notifications";
-import { sendEmail, generateNewOrderEmailTemplate } from "@/lib/email";
+import {
+  sendEmail,
+  generateCustomerOrderConfirmationEmailTemplate,
+  generateNewOrderEmailTemplate,
+} from "@/lib/email";
+
+function getPublicBaseUrl(request: NextRequest): string {
+  const configured = process.env.APP_BASE_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/$/, "");
+  }
+
+  return request.nextUrl.origin.replace(/\/$/, "");
+}
 
 function isShopifyConfigured() {
   const storeDomain = process.env.SHOPIFY_STORE_DOMAIN;
@@ -240,8 +253,13 @@ export async function POST(request: NextRequest) {
       order.id
     ).catch((err) => console.error('Failed to send order notifications:', err));
 
-    // Also format and send email with order details to admins
+    // Also format and send email with order details to admins and customer
     const formattedTotal = `£${(totalPence / 100).toFixed(2)}`;
+    const confirmationPath = `/order-confirmation/${order.id}${shopifyCheckoutUrl ? "" : "?mode=demo"}`;
+    const baseUrl = getPublicBaseUrl(request);
+    const confirmationUrl = `${baseUrl}${confirmationPath}`;
+    const statusUrl = `${baseUrl}/order-status`;
+
     const emailHtml = generateNewOrderEmailTemplate(
       order.id,
       input.customerName,
@@ -252,6 +270,19 @@ export async function POST(request: NextRequest) {
       })),
       formattedTotal,
       input.deliveryAddress
+    );
+
+    const customerEmailHtml = generateCustomerOrderConfirmationEmailTemplate(
+      order.id,
+      input.customerName,
+      lines.map((line) => ({
+        name: line.itemName,
+        quantity: line.quantity,
+        price: `£${(line.unitPricePence / 100).toFixed(2)}`,
+      })),
+      formattedTotal,
+      confirmationUrl,
+      statusUrl,
     );
 
     // Get admin emails and send notification emails
@@ -272,10 +303,23 @@ export async function POST(request: NextRequest) {
       })
       .catch((err) => console.error('Failed to fetch users for email:', err));
 
+    sendEmail({
+      to: input.customerEmail,
+      subject: `Your order #${order.id} confirmation`,
+      html: customerEmailHtml,
+      text: [
+        `Thanks for your order, ${input.customerName}.`,
+        `Order ID: ${order.id}`,
+        `Total: ${formattedTotal}`,
+        `Confirmation: ${confirmationUrl}`,
+        `Track status: ${statusUrl}`,
+      ].join("\n"),
+    }).catch((err) => console.error('Customer confirmation email failed:', err));
+
     return NextResponse.json(
       {
         orderId: order.id,
-        checkoutUrl: shopifyCheckoutUrl || `/demo-checkout?orderId=${order.id}`,
+        checkoutUrl: shopifyCheckoutUrl || `/order-confirmation/${order.id}?mode=demo`,
         isDemo: !shopifyCheckoutUrl,
       },
       { status: 201 },

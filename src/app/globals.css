@@ -1,19 +1,61 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f1f5f9;
-  --foreground: #0f172a;
+  --background: #07111f;
+  --foreground: #e8eef8;
+  --surface: #0d1726;
+  --surface-strong: #09111d;
+  --panel: rgba(13, 23, 38, 0.78);
+  --muted: #94a3b8;
+  --line: rgba(148, 163, 184, 0.16);
+  --accent: #7f56d9;
+  --accent-strong: #f05a28;
+  --cream: #f7efe4;
+  --success: #3bb273;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-heading);
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at top left, rgba(127, 86, 217, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(240, 90, 40, 0.18), transparent 22%),
+    linear-gradient(180deg, #08111f 0%, #0d1726 58%, #09111d 100%);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), "Segoe UI", sans-serif;
+  font-family: var(--font-body), "Segoe UI", sans-serif;
+}
+
+a {
+  text-decoration: none;
+}
+
+.font-heading {
+  font-family: var(--font-heading), Georgia, serif;
+}
+
+.surface-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 30px 80px rgba(2, 6, 23, 0.28);
+}
+
+.soft-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.text-balance {
+  text-wrap: balance;
 }

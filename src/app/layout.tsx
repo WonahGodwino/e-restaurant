@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
+import { Geist_Mono, Manrope, Playfair_Display } from "next/font/google";
+import { CartProvider } from "@/components/CartProvider";
+import SiteFooter from "@/components/SiteFooter";
+import SiteHeader from "@/components/SiteHeader";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const bodyFont = Manrope({
+  variable: "--font-body",
+  subsets: ["latin"],
+});
+
+const headingFont = Playfair_Display({
+  variable: "--font-heading",
   subsets: ["latin"],
 });
 
@@ -26,20 +33,14 @@ export default function RootLayout({
   return (
     <html
       lang="en-GB"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${bodyFont.variable} ${headingFont.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-100 text-slate-900">
-        <header className="border-b border-slate-200 bg-white/90">
-          <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-            <Link href="/" className="text-sm font-bold tracking-wide text-slate-900">
-              E-Restaurant UK
-            </Link>
-            <Link href="/admin" className="text-sm font-medium text-slate-600 hover:text-slate-900">
-              Admin
-            </Link>
-          </nav>
-        </header>
-        {children}
+      <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+        <CartProvider>
+          <SiteHeader />
+          {children}
+          <SiteFooter />
+        </CartProvider>
       </body>
     </html>
   );

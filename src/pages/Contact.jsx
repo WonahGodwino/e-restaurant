@@ -34,7 +34,7 @@ export default function Contact() {
       <div className="contact-hero">
         <div className="container">
           <h1>Contact Us</h1>
-          <p>We'd love to hear from you</p>
+          <p>We&apos;d love to hear from you</p>
         </div>
       </div>
 
@@ -44,7 +44,7 @@ export default function Contact() {
             <h2>Send a Message</h2>
             {submitted && (
               <div className="success-banner">
-                ✅ Thanks! Your message has been sent. We'll get back to you soon.
+                ✅ Thanks! Your message has been sent. We&apos;ll get back to you soon.
               </div>
             )}
             <form className="contact-form" onSubmit={handleSubmit} noValidate>

@@ -1,6 +1,13 @@
 import sgMail from '@sendgrid/mail';
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+import type { ContactFormInput } from '@/lib/validators';
+
+const sendGridApiKey = process.env.SENDGRID_API_KEY?.trim();
+const hasConfiguredSendGrid = Boolean(sendGridApiKey && sendGridApiKey.startsWith('SG.'));
+
+if (hasConfiguredSendGrid) {
+  sgMail.setApiKey(sendGridApiKey!);
+}
 
 interface EmailOptions {
   to: string;
@@ -11,7 +18,7 @@ interface EmailOptions {
 
 export async function sendEmail(options: EmailOptions) {
   try {
-    if (!process.env.SENDGRID_API_KEY) {
+    if (!hasConfiguredSendGrid) {
       console.warn('SendGrid API key not configured. Email not sent.');
       console.log('Email would have been sent to:', options.to);
       console.log('Subject:', options.subject);
@@ -70,5 +77,45 @@ export function generateNewOrderEmailTemplate(
     <p><strong>Total:</strong> ${total}</p>
     <p><strong>Delivery Address:</strong> ${deliveryAddress}</p>
     <p>Please start preparing this order!</p>
+  `;
+}
+
+export function generateContactEmailTemplate(input: ContactFormInput): string {
+  return `
+    <h2>New Contact Enquiry</h2>
+    <p><strong>Subject:</strong> ${input.subject}</p>
+    <p><strong>Name:</strong> ${input.name}</p>
+    <p><strong>Email:</strong> ${input.email}</p>
+    <p><strong>Phone:</strong> ${input.phone || 'Not provided'}</p>
+    <h3>Message</h3>
+    <p>${input.message.replace(/\n/g, '<br />')}</p>
+  `;
+}
+
+export function generateCustomerOrderConfirmationEmailTemplate(
+  orderId: string,
+  customerName: string,
+  items: Array<{ name: string; quantity: number; price: string }>,
+  total: string,
+  confirmationUrl: string,
+  statusUrl: string,
+): string {
+  const itemLines = items
+    .map((item) => `<li>${item.name} x ${item.quantity} - ${item.price}</li>`)
+    .join("");
+
+  return `
+    <h2>Thanks for your order, ${customerName}!</h2>
+    <p>Your order has been received.</p>
+    <p><strong>Order ID:</strong> ${orderId}</p>
+    <h3>Order summary</h3>
+    <ul>${itemLines}</ul>
+    <p><strong>Total:</strong> ${total}</p>
+    <p>
+      <a href="${confirmationUrl}">View order confirmation</a>
+    </p>
+    <p>
+      <a href="${statusUrl}">Track your order status</a>
+    </p>
   `;
 }
