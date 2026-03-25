@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { updateFoodItemSchema } from "@/lib/validators";
+import { logAuditEvent, getActorFromKey } from "@/lib/audit";
 
 function isAdminAuthorized(request: NextRequest): boolean {
   const key = request.headers.get("x-admin-key");
@@ -50,6 +51,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       ...(input.isAvailable !== undefined ? { isAvailable: input.isAvailable } : {}),
     },
   });
+
+  const actor = getActorFromKey(request.headers.get("x-admin-key"));
+  void logAuditEvent(actor, "menu.update", `FoodItem:${id}`, input as Record<string, unknown>);
 
   return NextResponse.json({ item });
 }

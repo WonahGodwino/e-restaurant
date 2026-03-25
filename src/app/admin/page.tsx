@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AdminDashboard from "@/components/AdminDashboard";
 import NotificationPanel from "@/components/NotificationPanel";
 import UserManagementPanel from "@/components/UserManagementPanel";
+import AuditLogViewer from "@/components/AuditLogViewer";
 import NotificationDashboard from "@/components/NotificationDashboard";
 import ReservationsPanel from "@/components/ReservationsPanel";
 import CateringPanel from "@/components/CateringPanel";
@@ -16,7 +17,7 @@ export default function AdminPage() {
     return localStorage.getItem("adminKey") ?? "";
   });
 
-  const [activeTab, setActiveTab] = useState<"menu" | "notifications" | "users" | "notif-dashboard" | "reservations" | "catering">(
+  const [activeTab, setActiveTab] = useState<"menu" | "notifications" | "users" | "notif-dashboard" | "audit">(
     "menu"
   );
   const [selectedUserId, setSelectedUserId] = useState(() => {
@@ -176,6 +177,16 @@ export default function AdminPage() {
         >
           Users
         </button>
+        <button
+          onClick={() => setActiveTab("audit")}
+          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+            activeTab === "audit"
+              ? "border-b-2 border-rose-600 text-rose-600"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Audit Log
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -214,6 +225,7 @@ export default function AdminPage() {
         </div>
       )}
       {activeTab === "users" && <UserManagementPanel adminKey={adminKey} />}
+      {activeTab === "audit" && <AuditLogViewer adminKey={adminKey} />}
     </div>
   );
 }

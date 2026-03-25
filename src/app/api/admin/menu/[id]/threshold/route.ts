@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { logAuditEvent, getActorFromKey } from '@/lib/audit';
 
 const adminKeyHeader = 'x-admin-key';
 
@@ -30,6 +31,11 @@ export async function PATCH(
     const item = await db.foodItem.update({
       where: { id },
       data: { lowStockThreshold },
+    });
+
+    const actor = getActorFromKey(request.headers.get('x-admin-key'));
+    void logAuditEvent(actor, 'stock.threshold_update', `FoodItem:${id}`, {
+      lowStockThreshold,
     });
 
     return NextResponse.json(item);

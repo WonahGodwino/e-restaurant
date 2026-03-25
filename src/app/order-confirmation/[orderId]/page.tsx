@@ -80,8 +80,23 @@ export default async function OrderConfirmationPage({
             </div>
 
             <div className="rounded-[1.5rem] border border-white/8 bg-white/4 p-6">
-              <h2 className="text-2xl font-semibold text-white">Delivery</h2>
-              <p className="mt-4 text-sm leading-8 text-white/66">{order.deliveryAddress}</p>
+              <h2 className="text-2xl font-semibold text-white">Fulfilment</h2>
+              <p className="mt-4 text-sm leading-8 text-white/66">
+                {order.fulfillmentType === "DELIVERY" ? "Delivery" : "Pickup"}
+              </p>
+              {order.fulfillmentType === "DELIVERY" && order.deliveryAddress ? (
+                <>
+                  {order.deliveryZoneName ? (
+                    <p className="text-sm leading-8 text-white/66">Zone: {order.deliveryZoneName}</p>
+                  ) : null}
+                  {order.deliveryPostcode ? (
+                    <p className="text-sm leading-8 text-white/66">Postcode: {order.deliveryPostcode}</p>
+                  ) : null}
+                  <p className="text-sm leading-8 text-white/66">{order.deliveryAddress}</p>
+                </>
+              ) : (
+                <p className="text-sm leading-8 text-white/66">Collect from restaurant location.</p>
+              )}
               {order.notes ? (
                 <p className="mt-4 text-sm leading-8 text-white/60">Notes: {order.notes}</p>
               ) : null}
@@ -104,6 +119,16 @@ export default async function OrderConfirmationPage({
                   <div className="flex items-center justify-between">
                     <span>Phone</span>
                     <span>{order.customerPhone}</span>
+                  </div>
+                ) : null}
+                <div className="flex items-center justify-between">
+                  <span>Fulfilment</span>
+                  <span>{order.fulfillmentType === "DELIVERY" ? "Delivery" : "Pickup"}</span>
+                </div>
+                {order.deliveryFeePence > 0 ? (
+                  <div className="flex items-center justify-between">
+                    <span>Delivery fee</span>
+                    <span>{formatGBP(order.deliveryFeePence)}</span>
                   </div>
                 ) : null}
                 <div className="flex items-center justify-between border-t border-white/10 pt-3 text-base font-semibold text-white">

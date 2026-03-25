@@ -16,7 +16,11 @@ type OrderResult = {
   customerName: string;
   customerEmail: string;
   customerPhone: string | null;
-  deliveryAddress: string;
+  fulfillmentType: "DELIVERY" | "PICKUP";
+  deliveryPostcode: string | null;
+  deliveryZoneName: string | null;
+  deliveryAddress: string | null;
+  deliveryFeePence: number;
   notes: string | null;
   totalPence: number;
   status: string;
@@ -117,7 +121,17 @@ export default function OrderStatusLookupClient() {
           <div className="mt-6 space-y-3 text-sm text-white/68">
             <div className="flex items-center justify-between"><span>Customer</span><span>{order.customerName}</span></div>
             <div className="flex items-center justify-between"><span>Email</span><span>{order.customerEmail}</span></div>
+            <div className="flex items-center justify-between"><span>Fulfilment</span><span>{order.fulfillmentType === "DELIVERY" ? "Delivery" : "Pickup"}</span></div>
+            {order.deliveryZoneName ? (
+              <div className="flex items-center justify-between"><span>Zone</span><span>{order.deliveryZoneName}</span></div>
+            ) : null}
+            {order.deliveryPostcode ? (
+              <div className="flex items-center justify-between"><span>Postcode</span><span>{order.deliveryPostcode}</span></div>
+            ) : null}
             <div className="flex items-center justify-between"><span>Created</span><span>{new Date(order.createdAt).toLocaleString("en-GB")}</span></div>
+            {order.deliveryFeePence > 0 ? (
+              <div className="flex items-center justify-between"><span>Delivery fee</span><span>{formatGBP(order.deliveryFeePence)}</span></div>
+            ) : null}
             <div className="flex items-center justify-between border-t border-white/10 pt-3 text-base font-semibold text-white"><span>Total</span><span>{formatGBP(order.totalPence)}</span></div>
           </div>
 

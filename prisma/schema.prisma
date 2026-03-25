@@ -19,6 +19,11 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum FulfillmentType {
+  DELIVERY
+  PICKUP
+}
+
 enum UserRole {
   ADMIN
   MANAGER
@@ -71,7 +76,11 @@ model Order {
   customerName       String
   customerEmail      String
   customerPhone      String?
-  deliveryAddress    String
+  fulfillmentType    FulfillmentType @default(DELIVERY)
+  deliveryAddress    String?
+  deliveryPostcode   String?
+  deliveryZoneName   String?
+  deliveryFeePence   Int         @default(0)
   notes              String?
   totalPence         Int
   currency           String      @default("GBP")
@@ -144,31 +153,11 @@ model Notification {
   foodItem FoodItem? @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
 }
 
-model Reservation {
-  id              String            @id @default(cuid())
-  customerName    String
-  customerEmail   String
-  customerPhone   String?
-  partySize       Int
-  date            DateTime
-  time            String
-  specialRequests String?
-  status          ReservationStatus @default(PENDING)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-}
-
-model CateringRequest {
-  id            String         @id @default(cuid())
-  customerName  String
-  customerEmail String
-  customerPhone String?
-  eventType     String
-  eventDate     DateTime
-  guestCount    Int
-  budget        String?
-  notes         String?
-  status        CateringStatus @default(PENDING)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String
+  action    String
+  target    String
+  details   String?
+  createdAt DateTime @default(now())
 }
