@@ -176,6 +176,8 @@ export async function GET(request: NextRequest) {
         customerEmail: order.customerEmail,
         customerPhone: order.customerPhone,
         fulfillmentType: order.fulfillmentType,
+        deliveryPostcode: order.deliveryPostcode,
+        deliveryZoneName: order.deliveryZoneName,
         deliveryAddress: order.deliveryAddress,
         deliveryFeePence: order.deliveryFeePence,
         notes: order.notes,

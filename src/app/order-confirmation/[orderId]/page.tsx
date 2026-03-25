@@ -85,7 +85,15 @@ export default async function OrderConfirmationPage({
                 {order.fulfillmentType === "DELIVERY" ? "Delivery" : "Pickup"}
               </p>
               {order.fulfillmentType === "DELIVERY" && order.deliveryAddress ? (
-                <p className="text-sm leading-8 text-white/66">{order.deliveryAddress}</p>
+                <>
+                  {order.deliveryZoneName ? (
+                    <p className="text-sm leading-8 text-white/66">Zone: {order.deliveryZoneName}</p>
+                  ) : null}
+                  {order.deliveryPostcode ? (
+                    <p className="text-sm leading-8 text-white/66">Postcode: {order.deliveryPostcode}</p>
+                  ) : null}
+                  <p className="text-sm leading-8 text-white/66">{order.deliveryAddress}</p>
+                </>
               ) : (
                 <p className="text-sm leading-8 text-white/66">Collect from restaurant location.</p>
               )}

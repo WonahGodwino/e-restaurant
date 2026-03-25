@@ -8,8 +8,7 @@ import {
   generateCustomerOrderConfirmationEmailTemplate,
   generateNewOrderEmailTemplate,
 } from "@/lib/email";
-
-const DELIVERY_FEE_PENCE = Number(process.env.DELIVERY_FEE_PENCE ?? 399);
+import { evaluateDeliveryQuote } from "@/lib/delivery-zones";
 
 function getPublicBaseUrl(request: NextRequest): string {
   const configured = process.env.APP_BASE_URL?.trim();
@@ -63,6 +62,7 @@ export async function POST(request: NextRequest) {
           customerEmail?: unknown;
           customerPhone?: unknown;
           fulfillmentType?: unknown;
+          deliveryPostcode?: unknown;
           deliveryAddress?: unknown;
           notes?: unknown;
           items?: unknown;
@@ -105,6 +105,12 @@ export async function POST(request: NextRequest) {
             : "demo@example.com";
 
         const fulfillmentType = source.fulfillmentType === "PICKUP" ? "PICKUP" : "DELIVERY";
+        const deliveryPostcode =
+          fulfillmentType === "DELIVERY" &&
+          typeof source.deliveryPostcode === "string" &&
+          source.deliveryPostcode.trim()
+            ? source.deliveryPostcode.trim()
+            : "";
 
         const deliveryAddress =
           fulfillmentType === "DELIVERY"
@@ -128,6 +134,7 @@ export async function POST(request: NextRequest) {
           customerEmail,
           customerPhone,
           fulfillmentType,
+          deliveryPostcode,
           deliveryAddress,
           notes,
           items,
@@ -184,8 +191,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const deliveryFeePence = input.fulfillmentType === "DELIVERY" ? DELIVERY_FEE_PENCE : 0;
-  const totalPence = lines.reduce((sum, line) => sum + line.lineTotalPence, 0) + deliveryFeePence;
+  const subtotalPence = lines.reduce((sum, line) => sum + line.lineTotalPence, 0);
+
+  let deliveryFeePence = 0;
+  let deliveryZoneName: string | null = null;
+
+  if (input.fulfillmentType === "DELIVERY") {
+    const quote = evaluateDeliveryQuote(subtotalPence, input.deliveryPostcode || "");
+    if (!quote.serviceable) {
+      return NextResponse.json(
+        { error: quote.reason ?? "Delivery is not available for this postcode." },
+        { status: 400 },
+      );
+    }
+
+    deliveryFeePence = quote.deliveryFeePence;
+    deliveryZoneName = quote.zoneName || null;
+  }
+
+  const totalPence = subtotalPence + deliveryFeePence;
 
   // Try Shopify integration, but fallback to demo mode if it fails
   let shopifyCartId: string | null = null;
@@ -235,6 +259,8 @@ export async function POST(request: NextRequest) {
           customerEmail: input.customerEmail,
           customerPhone: input.customerPhone || null,
           fulfillmentType: input.fulfillmentType === "PICKUP" ? "PICKUP" : "DELIVERY",
+          deliveryPostcode: input.fulfillmentType === "DELIVERY" ? input.deliveryPostcode || null : null,
+          deliveryZoneName,
           deliveryAddress: input.fulfillmentType === "DELIVERY" ? input.deliveryAddress || null : null,
           deliveryFeePence,
           notes: input.notes || null,
