@@ -45,7 +45,8 @@ export const createOrderSchema = z.object({
   customerName: z.string().trim().min(2).max(120),
   customerEmail: z.string().trim().email(),
   customerPhone: z.string().trim().max(30).optional().or(z.literal("")),
-  deliveryAddress: z.string().trim().min(10).max(400),
+  fulfillmentType: z.enum(["DELIVERY", "PICKUP"]).optional().default("DELIVERY"),
+  deliveryAddress: z.string().trim().max(400).optional().or(z.literal("")),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
   items: z
     .array(
@@ -55,6 +56,16 @@ export const createOrderSchema = z.object({
       }),
     )
     .min(1),
+}).superRefine((input, ctx) => {
+  if (input.fulfillmentType === "DELIVERY") {
+    if (!input.deliveryAddress || input.deliveryAddress.trim().length < 10) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["deliveryAddress"],
+        message: "Delivery address must be at least 10 characters for delivery orders.",
+      });
+    }
+  }
 });
 
 export const contactFormSchema = z.object({

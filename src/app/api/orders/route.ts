@@ -9,6 +9,8 @@ import {
   generateNewOrderEmailTemplate,
 } from "@/lib/email";
 
+const DELIVERY_FEE_PENCE = Number(process.env.DELIVERY_FEE_PENCE ?? 399);
+
 function getPublicBaseUrl(request: NextRequest): string {
   const configured = process.env.APP_BASE_URL?.trim();
   if (configured) {
@@ -60,6 +62,7 @@ export async function POST(request: NextRequest) {
           customerName?: unknown;
           customerEmail?: unknown;
           customerPhone?: unknown;
+          fulfillmentType?: unknown;
           deliveryAddress?: unknown;
           notes?: unknown;
           items?: unknown;
@@ -101,10 +104,14 @@ export async function POST(request: NextRequest) {
             ? source.customerEmail.trim()
             : "demo@example.com";
 
+        const fulfillmentType = source.fulfillmentType === "PICKUP" ? "PICKUP" : "DELIVERY";
+
         const deliveryAddress =
-          typeof source.deliveryAddress === "string" && source.deliveryAddress.trim()
-            ? source.deliveryAddress.trim()
-            : "Demo Address";
+          fulfillmentType === "DELIVERY"
+            ? typeof source.deliveryAddress === "string" && source.deliveryAddress.trim()
+              ? source.deliveryAddress.trim()
+              : "Demo Address"
+            : "";
 
         const customerPhone =
           typeof source.customerPhone === "string" && source.customerPhone.trim()
@@ -120,6 +127,7 @@ export async function POST(request: NextRequest) {
           customerName,
           customerEmail,
           customerPhone,
+          fulfillmentType,
           deliveryAddress,
           notes,
           items,
@@ -176,7 +184,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const totalPence = lines.reduce((sum, line) => sum + line.lineTotalPence, 0);
+  const deliveryFeePence = input.fulfillmentType === "DELIVERY" ? DELIVERY_FEE_PENCE : 0;
+  const totalPence = lines.reduce((sum, line) => sum + line.lineTotalPence, 0) + deliveryFeePence;
 
   // Try Shopify integration, but fallback to demo mode if it fails
   let shopifyCartId: string | null = null;
@@ -225,7 +234,9 @@ export async function POST(request: NextRequest) {
           customerName: input.customerName,
           customerEmail: input.customerEmail,
           customerPhone: input.customerPhone || null,
-          deliveryAddress: input.deliveryAddress,
+          fulfillmentType: input.fulfillmentType === "PICKUP" ? "PICKUP" : "DELIVERY",
+          deliveryAddress: input.fulfillmentType === "DELIVERY" ? input.deliveryAddress || null : null,
+          deliveryFeePence,
           notes: input.notes || null,
           totalPence,
           shopifyCartId,
@@ -269,7 +280,9 @@ export async function POST(request: NextRequest) {
         price: `£${(line.unitPricePence / 100).toFixed(2)}`,
       })),
       formattedTotal,
-      input.deliveryAddress
+      input.fulfillmentType === "DELIVERY"
+        ? input.deliveryAddress || "No delivery address provided"
+        : "Pickup order"
     );
 
     const customerEmailHtml = generateCustomerOrderConfirmationEmailTemplate(

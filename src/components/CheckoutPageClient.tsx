@@ -7,10 +7,13 @@ import { formatGBP } from "@/lib/currency";
 
 const DELIVERY_PENCE = 399;
 
+type FulfillmentType = "DELIVERY" | "PICKUP";
+
 type FormState = {
   name: string;
   email: string;
   phone: string;
+  fulfillmentType: FulfillmentType;
   address: string;
   notes: string;
 };
@@ -21,16 +24,19 @@ export default function CheckoutPageClient() {
     name: "",
     email: "",
     phone: "",
+    fulfillmentType: "DELIVERY",
     address: "",
     notes: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const totalPence = useMemo(
-    () => subtotalPence + (items.length > 0 ? DELIVERY_PENCE : 0),
-    [items.length, subtotalPence],
+  const deliveryFeePence = useMemo(
+    () => (items.length > 0 && form.fulfillmentType === "DELIVERY" ? DELIVERY_PENCE : 0),
+    [items.length, form.fulfillmentType],
   );
+
+  const totalPence = useMemo(() => subtotalPence + deliveryFeePence, [deliveryFeePence, subtotalPence]);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -44,8 +50,13 @@ export default function CheckoutPageClient() {
       return;
     }
 
-    if (!form.name.trim() || !form.email.trim() || !form.address.trim()) {
-      setError("Name, email, and delivery address are required.");
+    if (!form.name.trim() || !form.email.trim()) {
+      setError("Name and email are required.");
+      return;
+    }
+
+    if (form.fulfillmentType === "DELIVERY" && !form.address.trim()) {
+      setError("Delivery address is required for delivery orders.");
       return;
     }
 
@@ -59,6 +70,7 @@ export default function CheckoutPageClient() {
           customerName: form.name,
           customerEmail: form.email,
           customerPhone: form.phone,
+          fulfillmentType: form.fulfillmentType,
           deliveryAddress: form.address,
           notes: form.notes,
           items: items.map((item) => ({
@@ -93,15 +105,47 @@ export default function CheckoutPageClient() {
 
       <div className="grid gap-8 lg:grid-cols-[1.3fr_0.92fr]">
         <section className="surface-panel rounded-[1.8rem] p-6">
-          <h2 className="text-2xl font-semibold text-white">Delivery information</h2>
+          <h2 className="text-2xl font-semibold text-white">Fulfilment information</h2>
           <p className="mt-3 text-sm leading-7 text-white/62">
             Before placing your order, review the delivery, refund, and allergy policies that apply to online fulfilment.
           </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => updateField("fulfillmentType", "DELIVERY")}
+              className={[
+                "rounded-2xl border px-4 py-3 text-sm font-semibold transition",
+                form.fulfillmentType === "DELIVERY"
+                  ? "border-[var(--accent-strong)] bg-[var(--accent-strong)]/20 text-white"
+                  : "border-white/10 bg-white/6 text-white/72 hover:bg-white/10 hover:text-white",
+              ].join(" ")}
+            >
+              Delivery
+            </button>
+            <button
+              type="button"
+              onClick={() => updateField("fulfillmentType", "PICKUP")}
+              className={[
+                "rounded-2xl border px-4 py-3 text-sm font-semibold transition",
+                form.fulfillmentType === "PICKUP"
+                  ? "border-[var(--accent-strong)] bg-[var(--accent-strong)]/20 text-white"
+                  : "border-white/10 bg-white/6 text-white/72 hover:bg-white/10 hover:text-white",
+              ].join(" ")}
+            >
+              Pickup
+            </button>
+          </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <input value={form.name} onChange={(event) => updateField("name", event.target.value)} placeholder="Full name" className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35 sm:col-span-2" />
             <input value={form.email} onChange={(event) => updateField("email", event.target.value)} placeholder="Email" type="email" className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35" />
             <input value={form.phone} onChange={(event) => updateField("phone", event.target.value)} placeholder="Phone number" className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35" />
-            <textarea value={form.address} onChange={(event) => updateField("address", event.target.value)} placeholder="Delivery address" rows={4} className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35 sm:col-span-2" />
+            {form.fulfillmentType === "DELIVERY" ? (
+              <textarea value={form.address} onChange={(event) => updateField("address", event.target.value)} placeholder="Delivery address" rows={4} className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35 sm:col-span-2" />
+            ) : (
+              <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100 sm:col-span-2">
+                Pickup selected: no delivery address required.
+              </div>
+            )}
             <textarea value={form.notes} onChange={(event) => updateField("notes", event.target.value)} placeholder="Order notes" rows={3} className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35 sm:col-span-2" />
           </div>
 
@@ -149,7 +193,7 @@ export default function CheckoutPageClient() {
 
           <div className="mt-6 space-y-3 text-sm text-white/68">
             <div className="flex items-center justify-between"><span>Subtotal</span><span>{formatGBP(subtotalPence)}</span></div>
-            <div className="flex items-center justify-between"><span>Delivery</span><span>{formatGBP(DELIVERY_PENCE)}</span></div>
+            <div className="flex items-center justify-between"><span>{form.fulfillmentType === "DELIVERY" ? "Delivery" : "Pickup"}</span><span>{formatGBP(deliveryFeePence)}</span></div>
             <div className="flex items-center justify-between border-t border-white/10 pt-3 text-base font-semibold text-white"><span>Total</span><span>{formatGBP(totalPence)}</span></div>
           </div>
 
