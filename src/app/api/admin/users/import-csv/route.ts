@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { logAuditEvent, getActorFromKey } from '@/lib/audit';
 
 const adminKeyHeader = 'x-admin-key';
 
@@ -125,6 +126,12 @@ export async function POST(request: NextRequest) {
         results.skipped++;
       }
     }
+
+    const actor = getActorFromKey(request.headers.get('x-admin-key'));
+    void logAuditEvent(actor, 'user.import_csv', 'User:bulk', {
+      created: results.created,
+      skipped: results.skipped,
+    });
 
     return NextResponse.json(results);
   } catch (error) {

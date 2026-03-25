@@ -20,6 +20,11 @@ enum OrderStatus {
   DELIVERED
 }
 
+enum FulfillmentType {
+  DELIVERY
+  PICKUP
+}
+
 enum UserRole {
   ADMIN
   MANAGER
@@ -57,7 +62,11 @@ model Order {
   customerName       String
   customerEmail      String
   customerPhone      String?
-  deliveryAddress    String
+  fulfillmentType    FulfillmentType @default(DELIVERY)
+  deliveryAddress    String?
+  deliveryPostcode   String?
+  deliveryZoneName   String?
+  deliveryFeePence   Int         @default(0)
   notes              String?
   totalPence         Int
   currency           String      @default("GBP")
@@ -137,4 +146,13 @@ model Notification {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   foodItem FoodItem? @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String
+  action    String
+  target    String
+  details   String?
+  createdAt DateTime @default(now())
 }

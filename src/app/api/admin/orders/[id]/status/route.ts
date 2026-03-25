@@ -1,69 +1,62 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { isAuthorised } from "@/lib/auth";
-import { z } from "zod";
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { z } from 'zod';
+import { logAuditEvent, getActorFromKey } from '@/lib/audit';
 
-const VALID_STATUSES = [
-  "PENDING_PAYMENT",
-  "PAID",
-  "FAILED",
-  "CANCELLED",
-  "RECEIVED",
-  "PREPARING",
-  "READY",
-  "OUT_FOR_DELIVERY",
-  "DELIVERED",
-] as const;
+const adminKeyHeader = 'x-admin-key';
 
-const updateStatusSchema = z.object({
-  status: z.enum(VALID_STATUSES),
-  note: z.string().max(500).optional(),
+function isAdmin(request: NextRequest): boolean {
+  const key = request.headers.get(adminKeyHeader);
+  return Boolean(process.env.ADMIN_DASHBOARD_KEY) && key === process.env.ADMIN_DASHBOARD_KEY;
+}
+
+const updateOrderStatusSchema = z.object({
+  status: z.enum(['PENDING_PAYMENT', 'PAID', 'FAILED', 'CANCELLED']),
 });
 
+// PATCH /api/admin/orders/[id]/status - Update order status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!isAuthorised(request)) {
-    return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = await params;
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { status } = updateOrderStatusSchema.parse(body);
 
-  const body = await request.json().catch(() => null);
-  const parsed = updateStatusSchema.safeParse(body);
+    const existing = await db.order.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
 
-  if (!parsed.success) {
+    const order = await db.order.update({
+      where: { id },
+      data: { status },
+    });
+
+    const actor = getActorFromKey(request.headers.get(adminKeyHeader));
+    void logAuditEvent(actor, 'order.status_change', `Order:${id}`, {
+      previousStatus: existing.status,
+      newStatus: status,
+    });
+
+    return NextResponse.json({ order });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    console.error('Failed to update order status:', error);
     return NextResponse.json(
-      { error: "Invalid request", details: parsed.error.flatten() },
-      { status: 400 },
+      { error: 'Failed to update order status' },
+      { status: 500 }
     );
   }
-
-  const { status, note } = parsed.data;
-
-  const existing = await db.order.findUnique({ where: { id } });
-  if (!existing) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  }
-
-  const [order] = await db.$transaction([
-    db.order.update({
-      where: { id },
-      data: { status: status as never },
-      include: {
-        items: { orderBy: { createdAt: "asc" } },
-        statusHistory: { orderBy: { createdAt: "asc" } },
-      },
-    }),
-    db.orderStatusHistory.create({
-      data: {
-        orderId: id,
-        status: status as never,
-        note: note ?? null,
-      },
-    }),
-  ]);
-
-  return NextResponse.json({ order });
 }
