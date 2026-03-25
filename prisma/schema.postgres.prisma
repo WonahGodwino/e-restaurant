@@ -1,10 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/postgres-client"
 }
 
 datasource db {
@@ -32,20 +28,20 @@ enum NotificationType {
 }
 
 model FoodItem {
-  id                  String      @id @default(cuid())
-  name                String
-  description         String
-  category            String
-  pricePence          Int
-  stockQuantity       Int         @default(0)
-  lowStockThreshold   Int         @default(5)
-  imageUrl            String?
-  shopifyVariantId    String?
-  isAvailable         Boolean     @default(true)
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
-  orderItems          OrderItem[]
-  notifications       Notification[]
+  id                String         @id @default(cuid())
+  name              String
+  description       String
+  category          String
+  pricePence        Int
+  stockQuantity     Int            @default(0)
+  lowStockThreshold Int            @default(5)
+  imageUrl          String?
+  shopifyVariantId  String?
+  isAvailable       Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  orderItems        OrderItem[]
+  notifications     Notification[]
 }
 
 model Order {
@@ -80,13 +76,13 @@ model OrderItem {
 }
 
 model User {
-  id                      String   @id @default(cuid())
-  email                   String   @unique
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
   name                    String
   role                    UserRole
-  isActive                Boolean  @default(true)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  isActive                Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
   notificationPreferences NotificationPreference[]
   notifications           Notification[]
 }
@@ -107,18 +103,18 @@ model NotificationPreference {
 }
 
 model Notification {
-  id                String              @id @default(cuid())
-  userId            String
-  type              NotificationType
-  title             String
-  message           String
-  foodItemId        String?
-  orderId           String?
-  isRead            Boolean             @default(false)
-  emailSent         Boolean             @default(false)
-  emailSentAt       DateTime?
-  createdAt         DateTime            @default(now())
-  readAt            DateTime?
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  foodItemId  String?
+  orderId     String?
+  isRead      Boolean          @default(false)
+  emailSent   Boolean          @default(false)
+  emailSentAt DateTime?
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   foodItem FoodItem? @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
