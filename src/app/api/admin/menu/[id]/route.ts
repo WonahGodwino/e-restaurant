@@ -49,6 +49,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         ? { shopifyVariantId: input.shopifyVariantId || null }
         : {}),
       ...(input.isAvailable !== undefined ? { isAvailable: input.isAvailable } : {}),
+      ...(input.isAgeRestricted !== undefined ? { isAgeRestricted: input.isAgeRestricted } : {}),
     },
   });
 

@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
       imageUrl: input.imageUrl || null,
       shopifyVariantId: input.shopifyVariantId || null,
       isAvailable: input.isAvailable,
+      isAgeRestricted: input.isAgeRestricted,
     },
   });
 
