@@ -54,6 +54,17 @@ export const createOrderSchema = z.object({
       z.object({
         foodItemId: z.string().min(1),
         quantity: z.number().int().min(1).max(20),
+        selectedModifiers: z
+          .array(
+            z.object({
+              modifierId: z.string().min(1),
+              modifierName: z.string().min(1).max(120),
+              groupName: z.string().min(1).max(120),
+              priceDeltaPence: z.number().int(),
+            }),
+          )
+          .optional()
+          .default([]),
       }),
     )
     .min(1),

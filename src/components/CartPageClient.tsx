@@ -41,7 +41,7 @@ export default function CartPageClient() {
       <div className="grid gap-8 lg:grid-cols-[1.55fr_0.9fr]">
         <section className="space-y-4">
           {items.map((item) => (
-            <article key={item.id} className="surface-panel flex flex-col gap-5 rounded-[1.75rem] p-5 sm:flex-row">
+            <article key={item.cartKey} className="surface-panel flex flex-col gap-5 rounded-[1.75rem] p-5 sm:flex-row">
               {item.imageUrl ? (
                 <Image src={item.imageUrl} alt={item.name} width={220} height={180} className="h-40 w-full rounded-[1.25rem] object-cover sm:w-48" />
               ) : (
@@ -57,15 +57,34 @@ export default function CartPageClient() {
                       <p className="text-xs uppercase tracking-[0.18em] text-white/45">{item.category}</p>
                       <h2 className="mt-2 text-xl font-semibold text-white">{item.name}</h2>
                     </div>
-                    <span className="text-base font-semibold text-white">{formatGBP(item.pricePence * item.quantity)}</span>
+                    <span className="text-base font-semibold text-white">{formatGBP(item.effectivePricePence * item.quantity)}</span>
                   </div>
                   <p className="mt-3 text-sm leading-7 text-white/66">{item.description}</p>
+
+                  {/* Selected modifiers */}
+                  {item.selectedModifiers && item.selectedModifiers.length > 0 ? (
+                    <ul className="mt-3 space-y-1">
+                      {item.selectedModifiers.map((mod) => (
+                        <li key={mod.modifierId} className="flex items-center justify-between gap-2 text-xs text-white/60">
+                          <span>
+                            <span className="text-white/40">{mod.groupName}:</span>{" "}
+                            <span className="text-white/75">{mod.modifierName}</span>
+                          </span>
+                          {mod.priceDeltaPence !== 0 && (
+                            <span className={mod.priceDeltaPence > 0 ? "text-[var(--cream)]/70" : "text-emerald-300/70"}>
+                              {mod.priceDeltaPence > 0 ? "+" : ""}{formatGBP(mod.priceDeltaPence)}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => updateQuantity(item.id, item.quantity - 1)} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/6 text-lg text-white hover:bg-white/10">-</button>
+                  <button type="button" onClick={() => updateQuantity(item.cartKey, item.quantity - 1)} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/6 text-lg text-white hover:bg-white/10">-</button>
                   <span className="min-w-10 text-center text-base font-semibold text-white">{item.quantity}</span>
-                  <button type="button" onClick={() => updateQuantity(item.id, item.quantity + 1)} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/6 text-lg text-white hover:bg-white/10">+</button>
+                  <button type="button" onClick={() => updateQuantity(item.cartKey, item.quantity + 1)} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/6 text-lg text-white hover:bg-white/10">+</button>
                 </div>
               </div>
             </article>

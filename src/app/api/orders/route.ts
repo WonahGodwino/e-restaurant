@@ -86,9 +86,10 @@ export async function POST(request: NextRequest) {
             return {
               foodItemId,
               quantity: Math.floor(quantity),
+              selectedModifiers: [] as { modifierId: string; modifierName: string; groupName: string; priceDeltaPence: number; }[],
             };
           })
-          .filter((item): item is { foodItemId: string; quantity: number } => item !== null);
+          .filter((item): item is { foodItemId: string; quantity: number; selectedModifiers: { modifierId: string; modifierName: string; groupName: string; priceDeltaPence: number; }[] } => item !== null);
 
         if (items.length === 0) {
           return null;
@@ -169,13 +170,19 @@ export async function POST(request: NextRequest) {
 
   const lines = input.items.map((line) => {
     const item = menuMap.get(line.foodItemId)!;
+    const modifierDeltaPence = (line.selectedModifiers ?? []).reduce(
+      (sum, mod) => sum + mod.priceDeltaPence,
+      0,
+    );
+    const unitPricePence = item.pricePence + modifierDeltaPence;
     return {
       foodItemId: item.id,
       quantity: line.quantity,
-      unitPricePence: item.pricePence,
-      lineTotalPence: item.pricePence * line.quantity,
+      unitPricePence,
+      lineTotalPence: unitPricePence * line.quantity,
       itemName: item.name,
       shopifyVariantId: item.shopifyVariantId,
+      selectedModifiers: line.selectedModifiers ?? [],
     };
   });
 
@@ -297,6 +304,16 @@ export async function POST(request: NextRequest) {
               unitPricePence: line.unitPricePence,
               quantity: line.quantity,
               lineTotalPence: line.lineTotalPence,
+              modifiers: line.selectedModifiers.length > 0
+                ? {
+                    create: line.selectedModifiers.map((mod) => ({
+                      modifierId: mod.modifierId,
+                      modifierName: mod.modifierName,
+                      groupName: mod.groupName,
+                      priceDeltaPence: mod.priceDeltaPence,
+                    })),
+                  }
+                : undefined,
             })),
           },
         },

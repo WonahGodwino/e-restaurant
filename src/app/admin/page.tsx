@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminDashboard from "@/components/AdminDashboard";
+import AdminOrdersPanel from "@/components/AdminOrdersPanel";
 import NotificationPanel from "@/components/NotificationPanel";
 import UserManagementPanel from "@/components/UserManagementPanel";
 import AuditLogViewer from "@/components/AuditLogViewer";

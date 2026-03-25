@@ -17,6 +17,9 @@ export default async function OrderConfirmationPage({
     include: {
       items: {
         orderBy: { createdAt: "asc" },
+        include: {
+          modifiers: true,
+        },
       },
     },
   });
@@ -127,12 +130,31 @@ export default async function OrderConfirmationPage({
               <h2 className="text-2xl font-semibold text-white">Order details</h2>
               <div className="mt-5 space-y-4">
                 {order.items.map((item) => (
-                  <div key={item.id} className="flex items-start justify-between gap-3 rounded-2xl border border-white/8 bg-[rgba(255,255,255,0.03)] p-4 text-sm">
-                    <div>
-                      <p className="font-medium text-white">{item.itemName}</p>
-                      <p className="text-white/50">x{item.quantity}</p>
+                  <div key={item.id} className="rounded-2xl border border-white/8 bg-[rgba(255,255,255,0.03)] p-4 text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-white">{item.itemName}</p>
+                        <p className="text-white/50">x{item.quantity}</p>
+                      </div>
+                      <span className="font-medium text-white">{formatGBP(item.lineTotalPence)}</span>
                     </div>
-                    <span className="font-medium text-white">{formatGBP(item.lineTotalPence)}</span>
+                    {item.modifiers && item.modifiers.length > 0 && (
+                      <ul className="mt-2 space-y-1 border-t border-white/8 pt-2">
+                        {item.modifiers.map((mod) => (
+                          <li key={mod.id} className="flex items-center justify-between gap-2 text-xs text-white/55">
+                            <span>
+                              <span className="text-white/35">{mod.groupName}:</span>{" "}
+                              {mod.modifierName}
+                            </span>
+                            {mod.priceDeltaPence !== 0 && (
+                              <span className={mod.priceDeltaPence > 0 ? "text-[var(--cream)]/60" : "text-emerald-300/70"}>
+                                {mod.priceDeltaPence > 0 ? "+" : ""}{formatGBP(mod.priceDeltaPence)}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 ))}
               </div>

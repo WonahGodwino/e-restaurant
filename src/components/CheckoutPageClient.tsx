@@ -144,6 +144,7 @@ export default function CheckoutPageClient() {
           items: items.map((item) => ({
             foodItemId: item.id,
             quantity: item.quantity,
+            selectedModifiers: item.selectedModifiers ?? [],
           })),
         }),
       });
