@@ -18,7 +18,9 @@ export default function AdminPage() {
     return localStorage.getItem("adminKey") ?? "";
   });
 
-  const [activeTab, setActiveTab] = useState<"menu" | "notifications" | "users" | "notif-dashboard" | "audit">(
+  const [activeTab, setActiveTab] = useState<
+    "menu" | "orders" | "notifications" | "notif-dashboard" | "reservations" | "catering" | "users" | "audit"
+  >(
     "menu"
   );
   const [selectedUserId, setSelectedUserId] = useState(() => {
@@ -202,8 +204,8 @@ export default function AdminPage() {
 
       {/* Tab Content */}
       {activeTab === "menu" && <AdminDashboard />}
-      {activeTab === "orders" && <OrdersPanel adminKey={adminKey} />}
-        {activeTab === "notifications" && <NotificationPanel adminKey={adminKey} />}
+      {activeTab === "orders" && <AdminOrdersPanel adminKey={adminKey} />}
+      {activeTab === "notifications" && <NotificationPanel adminKey={adminKey} />}
       {activeTab === "notif-dashboard" && (
         <div className="space-y-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

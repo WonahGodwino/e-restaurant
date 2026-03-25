@@ -10,6 +10,31 @@ import {
 } from "@/lib/email";
 import { evaluateDeliveryQuote } from "@/lib/delivery-zones";
 
+async function sendOrderConfirmationToCustomer(input: {
+  orderId: string;
+  customerName: string;
+  customerEmail: string;
+  items: Array<{ name: string; quantity: number; price: string }>;
+  total: string;
+  confirmationUrl: string;
+  statusUrl: string;
+  deliveryAddress?: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.customerEmail,
+    subject: `Your order #${input.orderId} is confirmed`,
+    html: generateCustomerOrderConfirmationEmailTemplate(
+      input.orderId,
+      input.customerName,
+      input.items,
+      input.total,
+      input.confirmationUrl,
+      input.statusUrl,
+      input.deliveryAddress,
+    ),
+  });
+}
+
 function getPublicBaseUrl(request: NextRequest): string {
   const configured = process.env.APP_BASE_URL?.trim();
   if (configured) {
@@ -373,7 +398,6 @@ export async function POST(request: NextRequest) {
       orderId: order.id,
       customerName: input.customerName,
       customerEmail: input.customerEmail,
-      customerPhone: input.customerPhone || undefined,
       items: lines.map((line) => ({
         name: line.itemName,
         quantity: line.quantity,

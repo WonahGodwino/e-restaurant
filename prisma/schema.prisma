@@ -218,3 +218,32 @@ model AuditLog {
   details   String?
   createdAt DateTime @default(now())
 }
+
+model Reservation {
+  id              String            @id @default(cuid())
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  partySize       Int
+  date            DateTime
+  time            String
+  specialRequests String?
+  status          ReservationStatus @default(PENDING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model CateringRequest {
+  id            String         @id @default(cuid())
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  eventType     String
+  eventDate     DateTime
+  guestCount    Int
+  budget        String?
+  notes         String?
+  status        CateringStatus @default(PENDING)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}

@@ -6,7 +6,7 @@ const adminKeyHeader = 'x-admin-key';
 
 function isAdmin(request: NextRequest): boolean {
   const key = request.headers.get(adminKeyHeader);
-  return key === process.env.ADMIN_DASHBOARD_KEY;
+  return key === (process.env.ADMIN_DASHBOARD_KEY ?? process.env.ADMIN_API_KEY);
 }
 
 // POST /api/admin/users/import-csv - Import users from CSV

@@ -7,7 +7,8 @@ const adminKeyHeader = 'x-admin-key';
 
 function isAdmin(request: NextRequest): boolean {
   const key = request.headers.get(adminKeyHeader);
-  return Boolean(process.env.ADMIN_DASHBOARD_KEY) && key === process.env.ADMIN_DASHBOARD_KEY;
+  const expected = process.env.ADMIN_DASHBOARD_KEY ?? process.env.ADMIN_API_KEY;
+  return Boolean(expected) && key === expected;
 }
 
 const updateOrderStatusSchema = z.object({

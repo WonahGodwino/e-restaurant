@@ -4,7 +4,7 @@ import { z } from "zod";
 
 function isAdminAuthorized(request: NextRequest): boolean {
   const key = request.headers.get("x-admin-key");
-  const expected = process.env.ADMIN_DASHBOARD_KEY;
+  const expected = process.env.ADMIN_DASHBOARD_KEY ?? process.env.ADMIN_API_KEY;
   return Boolean(expected) && key === expected;
 }
 

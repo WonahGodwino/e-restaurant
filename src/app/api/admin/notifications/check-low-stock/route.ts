@@ -7,7 +7,7 @@ const adminKeyHeader = 'x-admin-key';
 
 function isAdmin(request: NextRequest): boolean {
   const key = request.headers.get(adminKeyHeader);
-  return key === process.env.ADMIN_DASHBOARD_KEY;
+  return key === (process.env.ADMIN_DASHBOARD_KEY ?? process.env.ADMIN_API_KEY);
 }
 
 // GET /api/admin/notifications/check-low-stock - Check and notify low stock items

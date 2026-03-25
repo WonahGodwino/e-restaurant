@@ -10,8 +10,44 @@ const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
 function isAdminAuthorized(request: NextRequest): boolean {
   const key = request.headers.get("x-admin-key");
-  const expected = process.env.ADMIN_DASHBOARD_KEY;
+  const expected = process.env.ADMIN_DASHBOARD_KEY ?? process.env.ADMIN_API_KEY;
   return Boolean(expected) && key === expected;
+}
+
+function detectImageType(buffer: Buffer): "image/jpeg" | "image/png" | "image/webp" | null {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return "image/jpeg";
+  }
+
+  if (
+    buffer.length >= 8 &&
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d &&
+    buffer[5] === 0x0a &&
+    buffer[6] === 0x1a &&
+    buffer[7] === 0x0a
+  ) {
+    return "image/png";
+  }
+
+  if (
+    buffer.length >= 12 &&
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+
+  return null;
 }
 
 function extensionFromFile(file: File): string {
@@ -49,6 +85,15 @@ export async function POST(request: NextRequest) {
 
   const bytes = await uploaded.arrayBuffer();
   const buffer = Buffer.from(bytes);
+  const detectedType = detectImageType(buffer);
+
+  if (!detectedType || detectedType !== uploaded.type) {
+    return NextResponse.json(
+      { error: "Uploaded file content does not match the declared image type." },
+      { status: 400 },
+    );
+  }
+
   const fileName = `${Date.now()}-${randomUUID()}${extensionFromFile(uploaded)}`;
   const uploadDirectory = path.join(process.cwd(), "public", "uploads");
   const absoluteFilePath = path.join(uploadDirectory, fileName);
