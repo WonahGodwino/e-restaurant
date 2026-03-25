@@ -99,10 +99,15 @@ export function generateCustomerOrderConfirmationEmailTemplate(
   total: string,
   confirmationUrl: string,
   statusUrl: string,
+  deliveryAddress?: string,
 ): string {
   const itemLines = items
     .map((item) => `<li>${item.name} x ${item.quantity} - ${item.price}</li>`)
     .join("");
+
+  const deliverySection = deliveryAddress
+    ? `<p><strong>Delivery address:</strong> ${deliveryAddress}</p>`
+    : "";
 
   return `
     <h2>Thanks for your order, ${customerName}!</h2>
@@ -111,6 +116,7 @@ export function generateCustomerOrderConfirmationEmailTemplate(
     <h3>Order summary</h3>
     <ul>${itemLines}</ul>
     <p><strong>Total:</strong> ${total}</p>
+    ${deliverySection}
     <p>
       <a href="${confirmationUrl}">View order confirmation</a>
     </p>

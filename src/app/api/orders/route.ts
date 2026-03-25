@@ -351,19 +351,6 @@ export async function POST(request: NextRequest) {
         : "Pickup order"
     );
 
-    const customerEmailHtml = generateCustomerOrderConfirmationEmailTemplate(
-      order.id,
-      input.customerName,
-      lines.map((line) => ({
-        name: line.itemName,
-        quantity: line.quantity,
-        price: `£${(line.unitPricePence / 100).toFixed(2)}`,
-      })),
-      formattedTotal,
-      confirmationUrl,
-      statusUrl,
-    );
-
     // Get admin emails and send notification emails
     db.user
       .findMany({
@@ -382,18 +369,21 @@ export async function POST(request: NextRequest) {
       })
       .catch((err) => console.error('Failed to fetch users for email:', err));
 
-    sendEmail({
-      to: input.customerEmail,
-      subject: `Your order #${order.id} confirmation`,
-      html: customerEmailHtml,
-      text: [
-        `Thanks for your order, ${input.customerName}.`,
-        `Order ID: ${order.id}`,
-        `Total: ${formattedTotal}`,
-        `Confirmation: ${confirmationUrl}`,
-        `Track status: ${statusUrl}`,
-      ].join("\n"),
-    }).catch((err) => console.error('Customer confirmation email failed:', err));
+    sendOrderConfirmationToCustomer({
+      orderId: order.id,
+      customerName: input.customerName,
+      customerEmail: input.customerEmail,
+      customerPhone: input.customerPhone || undefined,
+      items: lines.map((line) => ({
+        name: line.itemName,
+        quantity: line.quantity,
+        price: `£${(line.unitPricePence / 100).toFixed(2)}`,
+      })),
+      total: formattedTotal,
+      deliveryAddress: input.deliveryAddress,
+      confirmationUrl,
+      statusUrl,
+    }).catch((err) => console.error('Customer confirmation notification failed:', err));
 
     console.info(`[Payment] Order ${order.id} created successfully (shopifyCartId=${shopifyCartId ?? "none"})`);
 
