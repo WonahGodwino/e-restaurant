@@ -3,11 +3,8 @@ import { db } from "@/lib/db";
 import { createShopifyCart } from "@/lib/shopify";
 import { createOrderSchema } from "@/lib/validators";
 import { notifyAllAdminsAndCooks } from "@/lib/notifications";
-import {
-  sendEmail,
-  generateCustomerOrderConfirmationEmailTemplate,
-  generateNewOrderEmailTemplate,
-} from "@/lib/email";
+import { sendEmail, generateNewOrderEmailTemplate } from "@/lib/email";
+import { sendOrderConfirmationToCustomer } from "@/lib/notification-channels";
 
 function getPublicBaseUrl(request: NextRequest): string {
   const configured = process.env.APP_BASE_URL?.trim();
@@ -272,19 +269,6 @@ export async function POST(request: NextRequest) {
       input.deliveryAddress
     );
 
-    const customerEmailHtml = generateCustomerOrderConfirmationEmailTemplate(
-      order.id,
-      input.customerName,
-      lines.map((line) => ({
-        name: line.itemName,
-        quantity: line.quantity,
-        price: `£${(line.unitPricePence / 100).toFixed(2)}`,
-      })),
-      formattedTotal,
-      confirmationUrl,
-      statusUrl,
-    );
-
     // Get admin emails and send notification emails
     db.user
       .findMany({
@@ -303,18 +287,21 @@ export async function POST(request: NextRequest) {
       })
       .catch((err) => console.error('Failed to fetch users for email:', err));
 
-    sendEmail({
-      to: input.customerEmail,
-      subject: `Your order #${order.id} confirmation`,
-      html: customerEmailHtml,
-      text: [
-        `Thanks for your order, ${input.customerName}.`,
-        `Order ID: ${order.id}`,
-        `Total: ${formattedTotal}`,
-        `Confirmation: ${confirmationUrl}`,
-        `Track status: ${statusUrl}`,
-      ].join("\n"),
-    }).catch((err) => console.error('Customer confirmation email failed:', err));
+    sendOrderConfirmationToCustomer({
+      orderId: order.id,
+      customerName: input.customerName,
+      customerEmail: input.customerEmail,
+      customerPhone: input.customerPhone || undefined,
+      items: lines.map((line) => ({
+        name: line.itemName,
+        quantity: line.quantity,
+        price: `£${(line.unitPricePence / 100).toFixed(2)}`,
+      })),
+      total: formattedTotal,
+      deliveryAddress: input.deliveryAddress,
+      confirmationUrl,
+      statusUrl,
+    }).catch((err) => console.error('Customer confirmation notification failed:', err));
 
     return NextResponse.json(
       {
