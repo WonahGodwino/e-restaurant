@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { topUpStockSchema } from "@/lib/validators";
+import { logAuditEvent, getActorFromKey } from "@/lib/audit";
 
 function isAdminAuthorized(request: NextRequest): boolean {
   const key = request.headers.get("x-admin-key");
@@ -35,6 +36,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
         increment: parsed.data.quantityToAdd,
       },
     },
+  });
+
+  const actor = getActorFromKey(request.headers.get("x-admin-key"));
+  void logAuditEvent(actor, "stock.topup", `FoodItem:${id}`, {
+    quantityAdded: parsed.data.quantityToAdd,
+    newStock: item.stockQuantity,
   });
 
   return NextResponse.json({ item });
