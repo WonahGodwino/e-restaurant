@@ -1,0 +1,104 @@
+.food-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.food-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+.food-card-emoji {
+  background: linear-gradient(135deg, #fff5f5, #fff0e0);
+  font-size: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 0;
+  min-height: 120px;
+}
+
+.food-card-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.food-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.food-card-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.food-card-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  background-color: rgba(230, 57, 70, 0.1);
+  color: var(--primary);
+  padding: 3px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.food-card-desc {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  line-height: 1.5;
+  margin-bottom: 16px;
+  flex: 1;
+}
+
+.food-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.food-card-price {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.food-card-btn {
+  background-color: var(--primary);
+  color: var(--white);
+  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.food-card-btn:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.food-card-btn.in-cart {
+  background-color: var(--secondary);
+  color: var(--text);
+}
+
+.food-card-btn.in-cart:hover {
+  background-color: #d9920a;
+}
