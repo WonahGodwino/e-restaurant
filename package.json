@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "prisma generate",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -13,10 +14,13 @@
   },
   "dependencies": {
     "@prisma/client": "^6.13.0",
+    "@sendgrid/mail": "^8.1.6",
     "next": "16.2.1",
     "prisma": "^6.13.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {

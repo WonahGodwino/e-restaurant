@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
       description: input.description,
       category: input.category,
       pricePence: input.pricePence,
+      stockQuantity: input.stockQuantity,
       imageUrl: input.imageUrl || null,
       shopifyVariantId: input.shopifyVariantId || null,
       isAvailable: input.isAvailable,

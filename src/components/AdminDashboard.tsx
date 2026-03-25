@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import Image from "next/image";
 import { formatGBP } from "@/lib/currency";
 import type { MenuItem } from "@/types";
 
@@ -20,8 +21,12 @@ export default function AdminDashboard() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Main");
   const [priceGBP, setPriceGBP] = useState("");
+  const [stockQuantity, setStockQuantity] = useState("0");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [shopifyVariantId, setShopifyVariantId] = useState("");
+  const [topUpValues, setTopUpValues] = useState<Record<string, string>>({});
 
   async function loadItems(keyToUse = adminKey) {
     if (!keyToUse) return;
@@ -69,6 +74,38 @@ export default function AdminDashboard() {
       return;
     }
 
+    const initialStock = Math.round(Number(stockQuantity));
+    if (!Number.isFinite(initialStock) || initialStock < 0) {
+      setError("Initial stock must be 0 or greater.");
+      return;
+    }
+
+    let resolvedImageUrl = imageUrl.trim();
+
+    if (imageFile) {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("image", imageFile);
+
+      const uploadResponse = await fetch("/api/admin/upload-image", {
+        method: "POST",
+        headers: {
+          "x-admin-key": adminKey,
+        },
+        body: formData,
+      });
+
+      const uploadPayload = await uploadResponse.json();
+      setUploading(false);
+
+      if (!uploadResponse.ok) {
+        setError(uploadPayload.error ?? "Could not upload image.");
+        return;
+      }
+
+      resolvedImageUrl = uploadPayload.imageUrl;
+    }
+
     const response = await fetch("/api/admin/menu", {
       method: "POST",
       headers: {
@@ -80,7 +117,8 @@ export default function AdminDashboard() {
         description,
         category,
         pricePence: price,
-        imageUrl,
+        stockQuantity: initialStock,
+        imageUrl: resolvedImageUrl,
         shopifyVariantId,
         isAvailable: true,
       }),
@@ -97,8 +135,43 @@ export default function AdminDashboard() {
     setName("");
     setDescription("");
     setPriceGBP("");
+    setStockQuantity("0");
     setImageUrl("");
+    setImageFile(null);
     setShopifyVariantId("");
+    await loadItems();
+  }
+
+  async function topUpItem(item: MenuItem) {
+    const raw = topUpValues[item.id] ?? "";
+    const quantityToAdd = Math.round(Number(raw));
+
+    if (!Number.isFinite(quantityToAdd) || quantityToAdd <= 0) {
+      setError("Top-up quantity must be at least 1.");
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/admin/menu/${item.id}/stock`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-key": adminKey,
+      },
+      body: JSON.stringify({ quantityToAdd }),
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setError(payload.error ?? "Could not top up stock.");
+      return;
+    }
+
+    setTopUpValues((prev) => ({ ...prev, [item.id]: "" }));
+    setSuccess(`${payload.item.name} stock topped up by ${quantityToAdd}.`);
     await loadItems();
   }
 
@@ -195,6 +268,15 @@ export default function AdminDashboard() {
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
           <input
+            value={stockQuantity}
+            onChange={(event) => setStockQuantity(event.target.value)}
+            placeholder="Initial stock quantity"
+            type="number"
+            min={0}
+            required
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+          <input
             value={shopifyVariantId}
             onChange={(event) => setShopifyVariantId(event.target.value)}
             placeholder="Shopify variant GID"
@@ -203,7 +285,13 @@ export default function AdminDashboard() {
           <input
             value={imageUrl}
             onChange={(event) => setImageUrl(event.target.value)}
-            placeholder="Image URL (optional)"
+            placeholder="Image URL (optional if uploading file)"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+          />
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
           />
           <textarea
@@ -216,9 +304,10 @@ export default function AdminDashboard() {
           />
           <button
             type="submit"
+            disabled={uploading}
             className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white sm:col-span-2"
           >
-            Add dish
+            {uploading ? "Uploading image..." : "Add dish"}
           </button>
         </form>
       </section>
@@ -248,6 +337,20 @@ export default function AdminDashboard() {
                       <div>
                         <p className="font-medium text-slate-900">{item.name}</p>
                         <p className="text-sm text-slate-600">{formatGBP(item.pricePence)}</p>
+                        <p className="text-xs font-medium text-slate-700">
+                          In stock: {item.stockQuantity}
+                        </p>
+                        {item.imageUrl ? (
+                          <div className="mt-2 overflow-hidden rounded-md border border-slate-200">
+                            <Image
+                              src={item.imageUrl}
+                              alt={item.name}
+                              width={96}
+                              height={72}
+                              className="h-[72px] w-24 object-cover"
+                            />
+                          </div>
+                        ) : null}
                         <p className="text-xs text-slate-500">
                           Shopify: {item.shopifyVariantId ? "Connected" : "Missing variant ID"}
                         </p>
@@ -261,6 +364,25 @@ export default function AdminDashboard() {
                       >
                         {item.isAvailable ? "Mark unavailable" : "Mark available"}
                       </button>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          value={topUpValues[item.id] ?? ""}
+                          onChange={(event) =>
+                            setTopUpValues((prev) => ({ ...prev, [item.id]: event.target.value }))
+                          }
+                          placeholder="Top up qty"
+                          className="w-28 rounded-lg border border-slate-300 px-2 py-2 text-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void topUpItem(item)}
+                          className="rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white"
+                        >
+                          Top up
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

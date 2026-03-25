@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 
 export default async function Home() {
   const items = await db.foodItem.findMany({
-    where: { isAvailable: true },
+    where: { isAvailable: true, stockQuantity: { gt: 0 } },
     orderBy: [{ category: "asc" }, { name: "asc" }],
   });
 

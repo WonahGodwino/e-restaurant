@@ -37,6 +37,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.category !== undefined ? { category: input.category } : {}),
       ...(input.pricePence !== undefined ? { pricePence: input.pricePence } : {}),
+      ...(input.stockQuantity !== undefined ? { stockQuantity: input.stockQuantity } : {}),
       ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl || null } : {}),
       ...(input.shopifyVariantId !== undefined
         ? { shopifyVariantId: input.shopifyVariantId || null }

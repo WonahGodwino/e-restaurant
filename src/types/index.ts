@@ -4,6 +4,8 @@ export type MenuItem = {
   description: string;
   category: string;
   pricePence: number;
+  stockQuantity: number;
+  lowStockThreshold: number;
   imageUrl: string | null;
   shopifyVariantId: string | null;
   isAvailable: boolean;

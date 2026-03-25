@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import type { MenuItem } from "@/types";
 import { formatGBP } from "@/lib/currency";
 
@@ -19,6 +20,32 @@ export default function MenuOrderClient({ items }: Props) {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  useEffect(() => {
+    let disposed = false;
+
+    const loadOrderMode = async () => {
+      try {
+        const response = await fetch("/api/orders", { cache: "no-store" });
+        if (!response.ok) {
+          return;
+        }
+        const payload = (await response.json()) as { isDemo?: boolean };
+        if (!disposed) {
+          setIsDemoMode(Boolean(payload.isDemo));
+        }
+      } catch {
+        // Keep default mode if status cannot be fetched.
+      }
+    };
+
+    void loadOrderMode();
+
+    return () => {
+      disposed = true;
+    };
+  }, []);
 
   const grouped = useMemo(() => {
     const result: Record<string, MenuItem[]> = {};
@@ -104,10 +131,24 @@ export default function MenuOrderClient({ items }: Props) {
           <div key={category} className="space-y-4">
             <h2 className="text-2xl font-semibold text-slate-900">{category}</h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              {entries.map((entry) => (
+              {entries.map((entry, index) => (
                 <article key={entry.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  {entry.imageUrl ? (
+                    <div className="mb-3 overflow-hidden rounded-lg border border-slate-200">
+                      <Image
+                        src={entry.imageUrl}
+                        alt={entry.name}
+                        width={480}
+                        height={270}
+                        loading={index === 0 ? "eager" : "lazy"}
+                        priority={index === 0}
+                        className="h-40 w-full object-cover"
+                      />
+                    </div>
+                  ) : null}
                   <h3 className="text-lg font-semibold text-slate-900">{entry.name}</h3>
                   <p className="mt-2 text-sm text-slate-600">{entry.description}</p>
+                  <p className="mt-2 text-xs font-medium text-slate-500">Available: {entry.stockQuantity}</p>
                   <p className="mt-3 text-base font-semibold text-slate-900">{formatGBP(entry.pricePence)}</p>
                   <div className="mt-4 flex items-center gap-3">
                     <button
@@ -207,7 +248,11 @@ export default function MenuOrderClient({ items }: Props) {
           onClick={checkout}
           className="mt-5 w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
         >
-          {submitting ? "Preparing checkout..." : "Pay securely with Shopify"}
+          {submitting
+            ? "Preparing checkout..."
+            : isDemoMode
+              ? "Place demo order"
+              : "Pay securely with Shopify"}
         </button>
       </aside>
     </div>
