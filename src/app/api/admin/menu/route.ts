@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createFoodItemSchema } from "@/lib/validators";
+import { logAuditEvent, getActorFromKey } from "@/lib/audit";
 
 function isAdminAuthorized(request: NextRequest): boolean {
   const key = request.headers.get("x-admin-key");
@@ -50,6 +51,13 @@ export async function POST(request: NextRequest) {
       shopifyVariantId: input.shopifyVariantId || null,
       isAvailable: input.isAvailable,
     },
+  });
+
+  const actor = getActorFromKey(request.headers.get("x-admin-key"));
+  void logAuditEvent(actor, "menu.create", `FoodItem:${item.id}`, {
+    name: item.name,
+    category: item.category,
+    pricePence: item.pricePence,
   });
 
   return NextResponse.json({ item }, { status: 201 });
