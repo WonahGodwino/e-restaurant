@@ -29,6 +29,21 @@ enum NotificationType {
   LOW_STOCK
   NEW_ORDER
   ORDER_STATUS_CHANGE
+  NEW_RESERVATION
+  NEW_CATERING_REQUEST
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum CateringStatus {
+  PENDING
+  IN_REVIEW
+  CONFIRMED
+  CANCELLED
 }
 
 model FoodItem {
@@ -117,6 +132,8 @@ model Notification {
   message           String
   foodItemId        String?
   orderId           String?
+  reservationId     String?
+  cateringRequestId String?
   isRead            Boolean             @default(false)
   emailSent         Boolean             @default(false)
   emailSentAt       DateTime?
@@ -125,4 +142,33 @@ model Notification {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   foodItem FoodItem? @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+}
+
+model Reservation {
+  id              String            @id @default(cuid())
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  partySize       Int
+  date            DateTime
+  time            String
+  specialRequests String?
+  status          ReservationStatus @default(PENDING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model CateringRequest {
+  id            String         @id @default(cuid())
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  eventType     String
+  eventDate     DateTime
+  guestCount    Int
+  budget        String?
+  notes         String?
+  status        CateringStatus @default(PENDING)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
