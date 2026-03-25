@@ -12,4 +12,5 @@ export type MenuItem = {
   imageUrl: string | null;
   shopifyVariantId: string | null;
   isAvailable: boolean;
+  isAgeRestricted: boolean;
 };

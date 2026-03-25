@@ -5,7 +5,7 @@ import type { MenuItem } from "@/types";
 
 type CartProduct = Pick<
   MenuItem,
-  "id" | "name" | "description" | "category" | "pricePence" | "imageUrl" | "stockQuantity"
+  "id" | "name" | "description" | "category" | "pricePence" | "imageUrl" | "stockQuantity" | "isAgeRestricted"
 >;
 
 export type CartItem = CartProduct & {

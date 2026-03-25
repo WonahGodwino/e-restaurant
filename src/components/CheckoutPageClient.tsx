@@ -26,6 +26,12 @@ export default function CheckoutPageClient() {
   });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+
+  const hasAgeRestrictedItems = useMemo(
+    () => items.some((item) => item.isAgeRestricted),
+    [items],
+  );
 
   const totalPence = useMemo(
     () => subtotalPence + (items.length > 0 ? DELIVERY_PENCE : 0),
@@ -46,6 +52,11 @@ export default function CheckoutPageClient() {
 
     if (!form.name.trim() || !form.email.trim() || !form.address.trim()) {
       setError("Name, email, and delivery address are required.");
+      return;
+    }
+
+    if (hasAgeRestrictedItems && !ageConfirmed) {
+      setError("You must confirm you are aged 18 or over to purchase age-restricted items.");
       return;
     }
 
@@ -104,6 +115,22 @@ export default function CheckoutPageClient() {
             <textarea value={form.address} onChange={(event) => updateField("address", event.target.value)} placeholder="Delivery address" rows={4} className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35 sm:col-span-2" />
             <textarea value={form.notes} onChange={(event) => updateField("notes", event.target.value)} placeholder="Order notes" rows={3} className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35 sm:col-span-2" />
           </div>
+
+          {hasAgeRestrictedItems ? (
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-amber-400/30 bg-amber-500/12 p-4 text-sm text-amber-200">
+              <input
+                type="checkbox"
+                checked={ageConfirmed}
+                onChange={(event) => setAgeConfirmed(event.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-amber-400"
+              />
+              <span>
+                <strong className="font-semibold">Age verification required</strong> — your order contains age-restricted items
+                (e.g. alcohol). By checking this box you confirm that you are aged 18 or over and that proof of age
+                may be requested on delivery.
+              </span>
+            </label>
+          ) : null}
 
           {error ? <p className="mt-4 text-sm text-red-300">{error}</p> : null}
 

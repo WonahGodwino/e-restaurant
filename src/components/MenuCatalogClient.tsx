@@ -66,6 +66,12 @@ export default function MenuCatalogClient({ items }: { items: MenuItem[] }) {
                     {formatGBP(item.pricePence)}
                   </span>
                 </div>
+                {item.isAgeRestricted ? (
+                  <p className="mt-3 flex items-center gap-1.5 rounded-xl border border-amber-400/30 bg-amber-500/15 px-3 py-2 text-xs font-semibold text-amber-200">
+                    <span aria-hidden="true">🔞</span>
+                    Age-restricted item — you must be 18 or over to purchase this product.
+                  </p>
+                ) : null}
                 <p className="mt-3 text-sm leading-7 text-white/66">{item.description}</p>
                 {item.dietaryTags.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-2">

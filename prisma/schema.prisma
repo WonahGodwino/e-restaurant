@@ -45,6 +45,7 @@ model FoodItem {
   imageUrl            String?
   shopifyVariantId    String?
   isAvailable         Boolean     @default(true)
+  isAgeRestricted     Boolean     @default(false)
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
   orderItems          OrderItem[]

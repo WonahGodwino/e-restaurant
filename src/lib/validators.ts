@@ -33,6 +33,7 @@ export const createFoodItemSchema = z.object({
   imageUrl: imagePathOrUrlSchema.optional().or(z.literal("")),
   shopifyVariantId: z.string().trim().optional().or(z.literal("")),
   isAvailable: z.boolean().optional().default(true),
+  isAgeRestricted: z.boolean().optional().default(false),
 });
 
 export const updateFoodItemSchema = createFoodItemSchema.partial();

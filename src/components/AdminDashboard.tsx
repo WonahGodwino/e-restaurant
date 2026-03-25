@@ -40,6 +40,7 @@ export default function AdminDashboard() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [shopifyVariantId, setShopifyVariantId] = useState("");
+  const [isAgeRestricted, setIsAgeRestricted] = useState(false);
   const [topUpValues, setTopUpValues] = useState<Record<string, string>>({});
 
   async function loadItems(keyToUse = adminKey) {
@@ -138,6 +139,7 @@ export default function AdminDashboard() {
         imageUrl: resolvedImageUrl,
         shopifyVariantId,
         isAvailable: true,
+        isAgeRestricted,
       }),
     });
 
@@ -159,6 +161,7 @@ export default function AdminDashboard() {
     setImageUrl("");
     setImageFile(null);
     setShopifyVariantId("");
+    setIsAgeRestricted(false);
     await loadItems();
   }
 
@@ -218,6 +221,32 @@ export default function AdminDashboard() {
     }
 
     setSuccess(`${payload.item.name} updated.`);
+    await loadItems();
+  }
+
+  async function toggleAgeRestricted(item: MenuItem) {
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/admin/menu/${item.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-key": adminKey,
+      },
+      body: JSON.stringify({
+        isAgeRestricted: !item.isAgeRestricted,
+      }),
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setError(payload.error ?? "Could not update item.");
+      return;
+    }
+
+    setSuccess(`${payload.item.name} age restriction updated.`);
     await loadItems();
   }
 
@@ -321,6 +350,15 @@ export default function AdminDashboard() {
             placeholder="Shopify variant GID"
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
+          <label className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={isAgeRestricted}
+              onChange={(event) => setIsAgeRestricted(event.target.checked)}
+              className="h-4 w-4 accent-amber-600"
+            />
+            Age-restricted item (e.g. alcohol — customers must confirm they are 18+ at checkout)
+          </label>
           <input
             value={imageUrl}
             onChange={(event) => setImageUrl(event.target.value)}
@@ -419,6 +457,9 @@ export default function AdminDashboard() {
                             Cross-contamination: {item.crossContaminationNotes}
                           </p>
                         ) : null}
+                        {item.isAgeRestricted ? (
+                          <p className="mt-2 text-xs font-semibold text-amber-700">🔞 Age-restricted item</p>
+                        ) : null}
                         <p className="text-xs text-slate-500">
                           Shopify: {item.shopifyVariantId ? "Connected" : "Missing variant ID"}
                         </p>
@@ -431,6 +472,15 @@ export default function AdminDashboard() {
                         }`}
                       >
                         {item.isAvailable ? "Mark unavailable" : "Mark available"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void toggleAgeRestricted(item)}
+                        className={`rounded-lg px-3 py-2 text-xs font-semibold text-white ${
+                          item.isAgeRestricted ? "bg-slate-600" : "bg-amber-700"
+                        }`}
+                      >
+                        {item.isAgeRestricted ? "Remove age restriction" : "Mark 18+ restricted"}
                       </button>
                       <div className="flex items-center gap-2">
                         <input
