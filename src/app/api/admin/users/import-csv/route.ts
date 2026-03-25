@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { logAuditEvent, getActorFromKey } from '@/lib/audit';
 
 const adminKeyHeader = 'x-admin-key';
 
 function isAdmin(request: NextRequest): boolean {
   const key = request.headers.get(adminKeyHeader);
-  return key === process.env.ADMIN_DASHBOARD_KEY;
+  return key === (process.env.ADMIN_DASHBOARD_KEY ?? process.env.ADMIN_API_KEY);
 }
 
 // POST /api/admin/users/import-csv - Import users from CSV
@@ -125,6 +126,12 @@ export async function POST(request: NextRequest) {
         results.skipped++;
       }
     }
+
+    const actor = getActorFromKey(request.headers.get('x-admin-key'));
+    void logAuditEvent(actor, 'user.import_csv', 'User:bulk', {
+      created: results.created,
+      skipped: results.skipped,
+    });
 
     return NextResponse.json(results);
   } catch (error) {

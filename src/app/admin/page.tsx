@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import AdminDashboard from "@/components/AdminDashboard";
+import AdminOrdersPanel from "@/components/AdminOrdersPanel";
 import NotificationPanel from "@/components/NotificationPanel";
 import UserManagementPanel from "@/components/UserManagementPanel";
 import ServiceWindowsPanel from "@/components/ServiceWindowsPanel";
-
+import AuditLogViewer from "@/components/AuditLogViewer";
 import NotificationDashboard from "@/components/NotificationDashboard";
+import ReservationsPanel from "@/components/ReservationsPanel";
+import CateringPanel from "@/components/CateringPanel";
+
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState(() => {
     if (typeof window === "undefined") {
@@ -15,7 +19,9 @@ export default function AdminPage() {
     return localStorage.getItem("adminKey") ?? "";
   });
 
-  const [activeTab, setActiveTab] = useState<"menu" | "notifications" | "users" | "notif-dashboard" | "service-windows">(
+  const [activeTab, setActiveTab] = useState<
+    "menu" | "orders" | "notifications" | "notif-dashboard" | "reservations" | "catering" | "users" | "audit" | "service-windows"
+  >(
     "menu"
   );
   const [selectedUserId, setSelectedUserId] = useState(() => {
@@ -85,7 +91,7 @@ export default function AdminPage() {
           </div>
         </div>
         <p className="mt-2 text-sm text-slate-200">
-          Manage menu items, monitor stock, set notifications, and manage users.
+          Manage menu items, monitor stock, set notifications, manage users, reservations and catering requests.
         </p>
       </header>
 
@@ -126,6 +132,16 @@ export default function AdminPage() {
           Menu Items
         </button>
         <button
+          onClick={() => setActiveTab("orders")}
+          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+            activeTab === "orders"
+              ? "border-b-2 border-green-600 text-green-700"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Orders
+        </button>
+        <button
           onClick={() => setActiveTab("notifications")}
           className={`px-4 py-3 font-semibold whitespace-nowrap ${
             activeTab === "notifications"
@@ -144,6 +160,26 @@ export default function AdminPage() {
           }`}
         >
           Notif Dashboard {unreadCount > 0 ? `(${unreadCount})` : ""}
+        </button>
+        <button
+          onClick={() => setActiveTab("reservations")}
+          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+            activeTab === "reservations"
+              ? "border-b-2 border-teal-600 text-teal-600"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Reservations
+        </button>
+        <button
+          onClick={() => setActiveTab("catering")}
+          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+            activeTab === "catering"
+              ? "border-b-2 border-indigo-600 text-indigo-600"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Catering
         </button>
         <button
           onClick={() => setActiveTab("users")}
@@ -165,11 +201,22 @@ export default function AdminPage() {
         >
           Service Windows
         </button>
+        <button
+          onClick={() => setActiveTab("audit")}
+          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+            activeTab === "audit"
+              ? "border-b-2 border-rose-600 text-rose-600"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Audit Log
+        </button>
       </div>
 
       {/* Tab Content */}
       {activeTab === "menu" && <AdminDashboard />}
-        {activeTab === "notifications" && <NotificationPanel adminKey={adminKey} />}
+      {activeTab === "orders" && <AdminOrdersPanel adminKey={adminKey} />}
+      {activeTab === "notifications" && <NotificationPanel adminKey={adminKey} />}
       {activeTab === "notif-dashboard" && (
         <div className="space-y-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -192,7 +239,19 @@ export default function AdminPage() {
           )}
         </div>
       )}
+      {activeTab === "reservations" && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <ReservationsPanel adminKey={adminKey} />
+        </div>
+      )}
+      {activeTab === "catering" && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <CateringPanel adminKey={adminKey} />
+        </div>
+      )}
       {activeTab === "users" && <UserManagementPanel adminKey={adminKey} />}
+      {activeTab === "service-windows" && <ServiceWindowsPanel adminKey={adminKey} />}
+      {activeTab === "audit" && <AuditLogViewer adminKey={adminKey} />}
       {activeTab === "service-windows" && <ServiceWindowsPanel adminKey={adminKey} />}
     </div>
   );

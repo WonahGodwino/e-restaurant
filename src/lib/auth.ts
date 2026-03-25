@@ -1,12 +1,11 @@
 import type { NextRequest } from "next/server";
 
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY ?? "";
-
 /**
  * Returns true if the incoming request carries a valid admin API key.
- * Matches the value of the ADMIN_API_KEY environment variable.
+ * Matches ADMIN_DASHBOARD_KEY, or falls back to ADMIN_API_KEY.
  */
 export function isAuthorised(req: NextRequest): boolean {
+  const expected = process.env.ADMIN_DASHBOARD_KEY ?? process.env.ADMIN_API_KEY ?? "";
   const key = req.headers.get("x-admin-key") ?? "";
-  return ADMIN_API_KEY.length > 0 && key === ADMIN_API_KEY;
+  return expected.length > 0 && key === expected;
 }

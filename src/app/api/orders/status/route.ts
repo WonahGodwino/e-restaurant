@@ -158,6 +158,9 @@ export async function GET(request: NextRequest) {
       items: {
         orderBy: { createdAt: "asc" },
       },
+      statusHistory: {
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 
@@ -175,7 +178,11 @@ export async function GET(request: NextRequest) {
         customerName: order.customerName,
         customerEmail: order.customerEmail,
         customerPhone: order.customerPhone,
+        fulfillmentType: order.fulfillmentType,
+        deliveryPostcode: order.deliveryPostcode,
+        deliveryZoneName: order.deliveryZoneName,
         deliveryAddress: order.deliveryAddress,
+        deliveryFeePence: order.deliveryFeePence,
         notes: order.notes,
         totalPence: order.totalPence,
         currency: order.currency,
@@ -183,6 +190,7 @@ export async function GET(request: NextRequest) {
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         items: order.items,
+        statusHistory: order.statusHistory,
       },
     },
     { headers: rateLimitHeaders },

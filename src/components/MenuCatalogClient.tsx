@@ -3,23 +3,71 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useCart } from "@/components/CartProvider";
+import ModifierSelectorModal from "@/components/ModifierSelectorModal";
 import { formatGBP } from "@/lib/currency";
 import type { MenuItem } from "@/types";
+import type { SelectedModifier } from "@/components/CartProvider";
 
 export default function MenuCatalogClient({ items }: { items: MenuItem[] }) {
   const [activeCategory, setActiveCategory] = useState("All");
+  const [activeDietaryTags, setActiveDietaryTags] = useState<string[]>([]);
   const { addItem, items: cartItems } = useCart();
+  const [pendingItem, setPendingItem] = useState<MenuItem | null>(null);
 
   const categories = useMemo(() => ["All", ...Array.from(new Set(items.map((item) => item.category)))], [items]);
+  const dietaryTagOptions = useMemo(
+    () => Array.from(new Set(items.flatMap((item) => item.dietaryTags))).sort(),
+    [items],
+  );
 
   const filtered = useMemo(() => {
-    return activeCategory === "All"
-      ? items
-      : items.filter((item) => item.category === activeCategory);
-  }, [activeCategory, items]);
+    const categoryFiltered =
+      activeCategory === "All"
+        ? items
+        : items.filter((item) => item.category === activeCategory);
+
+    if (activeDietaryTags.length === 0) {
+      return categoryFiltered;
+    }
+
+    return categoryFiltered.filter((item) =>
+      activeDietaryTags.every((tag) => item.dietaryTags.includes(tag)),
+    );
+  }, [activeCategory, activeDietaryTags, items]);
+
+  function toggleDietaryTag(tag: string) {
+    setActiveDietaryTags((current) =>
+      current.includes(tag)
+        ? current.filter((value) => value !== tag)
+        : [...current, tag],
+    );
+  }
+
+  function handleAddToCart(item: MenuItem) {
+    if (item.modifierGroups && item.modifierGroups.length > 0) {
+      setPendingItem(item);
+    } else {
+      addItem(item);
+    }
+  }
+
+  function handleModifierConfirm(selectedModifiers: SelectedModifier[]) {
+    if (pendingItem) {
+      addItem(pendingItem, selectedModifiers);
+      setPendingItem(null);
+    }
+  }
 
   return (
     <div className="space-y-8">
+      {pendingItem && (
+        <ModifierSelectorModal
+          item={pendingItem}
+          onConfirm={handleModifierConfirm}
+          onClose={() => setPendingItem(null)}
+        />
+      )}
+
       <div className="flex flex-wrap gap-3">
         {categories.map((category) => (
           <button
@@ -37,6 +85,43 @@ export default function MenuCatalogClient({ items }: { items: MenuItem[] }) {
           </button>
         ))}
       </div>
+
+      {dietaryTagOptions.length > 0 ? (
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
+            Filter by dietary tags
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {dietaryTagOptions.map((tag) => {
+              const active = activeDietaryTags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleDietaryTag(tag)}
+                  className={[
+                    "rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition",
+                    active
+                      ? "bg-emerald-500/25 text-emerald-100 border border-emerald-300/35"
+                      : "border border-white/10 bg-white/6 text-white/70 hover:bg-white/10 hover:text-white",
+                  ].join(" ")}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+            {activeDietaryTags.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setActiveDietaryTags([])}
+                className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/70 transition hover:bg-white/10 hover:text-white"
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <p className="text-sm text-white/58">
         {filtered.length} item{filtered.length === 1 ? "" : "s"} in {activeCategory === "All" ? "all categories" : activeCategory}
@@ -67,6 +152,11 @@ export default function MenuCatalogClient({ items }: { items: MenuItem[] }) {
                   </span>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-white/66">{item.description}</p>
+                {item.modifierGroups && item.modifierGroups.length > 0 ? (
+                  <p className="mt-2 text-xs text-white/45">
+                    Customisable · {item.modifierGroups.length} option group{item.modifierGroups.length === 1 ? "" : "s"}
+                  </p>
+                ) : null}
                 {item.dietaryTags.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {item.dietaryTags.map((tag) => (
@@ -93,7 +183,7 @@ export default function MenuCatalogClient({ items }: { items: MenuItem[] }) {
                   <span className="text-xs uppercase tracking-[0.18em] text-white/42">Stock: {item.stockQuantity}</span>
                   <button
                     type="button"
-                    onClick={() => addItem(item)}
+                    onClick={() => handleAddToCart(item)}
                     className={[
                       "rounded-full px-4 py-2 text-sm font-semibold transition",
                       inCart
@@ -101,7 +191,11 @@ export default function MenuCatalogClient({ items }: { items: MenuItem[] }) {
                         : "bg-[var(--accent-strong)] text-white shadow-[0_16px_35px_rgba(240,90,40,0.22)] hover:-translate-y-0.5 hover:brightness-105",
                     ].join(" ")}
                   >
-                    {inCart ? `In Cart (${inCart.quantity})` : "Add to cart"}
+                    {inCart
+                      ? `In Cart (${cartItems.filter((e) => e.id === item.id).reduce((s, e) => s + e.quantity, 0)})`
+                      : item.modifierGroups && item.modifierGroups.length > 0
+                        ? "Customise & Add"
+                        : "Add to cart"}
                   </button>
                 </div>
               </div>
