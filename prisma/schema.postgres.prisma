@@ -57,11 +57,27 @@ model Order {
   totalPence         Int
   currency           String      @default("GBP")
   status             OrderStatus @default(PENDING_PAYMENT)
+  orderType          String      @default("ASAP")
+  scheduledFor       DateTime?
   shopifyCartId      String?
   shopifyCheckoutUrl String?
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   items              OrderItem[]
+}
+
+model ServiceWindow {
+  id                  String   @id @default(cuid())
+  dayOfWeek           Int
+  openTime            String
+  closeTime           String
+  slotDurationMinutes Int      @default(30)
+  cutoffMinutes       Int      @default(60)
+  isPickup            Boolean  @default(true)
+  isDelivery          Boolean  @default(true)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model OrderItem {

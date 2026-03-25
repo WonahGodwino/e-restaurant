@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AdminDashboard from "@/components/AdminDashboard";
 import NotificationPanel from "@/components/NotificationPanel";
 import UserManagementPanel from "@/components/UserManagementPanel";
+import ServiceWindowsPanel from "@/components/ServiceWindowsPanel";
 
 import NotificationDashboard from "@/components/NotificationDashboard";
 export default function AdminPage() {
@@ -14,7 +15,7 @@ export default function AdminPage() {
     return localStorage.getItem("adminKey") ?? "";
   });
 
-  const [activeTab, setActiveTab] = useState<"menu" | "notifications" | "users" | "notif-dashboard">(
+  const [activeTab, setActiveTab] = useState<"menu" | "notifications" | "users" | "notif-dashboard" | "service-windows">(
     "menu"
   );
   const [selectedUserId, setSelectedUserId] = useState(() => {
@@ -154,6 +155,16 @@ export default function AdminPage() {
         >
           Users
         </button>
+        <button
+          onClick={() => setActiveTab("service-windows")}
+          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+            activeTab === "service-windows"
+              ? "border-b-2 border-green-600 text-green-600"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Service Windows
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -182,6 +193,7 @@ export default function AdminPage() {
         </div>
       )}
       {activeTab === "users" && <UserManagementPanel adminKey={adminKey} />}
+      {activeTab === "service-windows" && <ServiceWindowsPanel adminKey={adminKey} />}
     </div>
   );
 }
