@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  FAILED
+  CANCELLED
+}
+
+model FoodItem {
+  id               String      @id @default(cuid())
+  name             String
+  description      String
+  category         String
+  pricePence       Int
+  imageUrl         String?
+  shopifyVariantId String?
+  isAvailable      Boolean     @default(true)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  orderItems       OrderItem[]
+}
+
+model Order {
+  id                 String      @id @default(cuid())
+  customerName       String
+  customerEmail      String
+  customerPhone      String?
+  deliveryAddress    String
+  notes              String?
+  totalPence         Int
+  currency           String      @default("GBP")
+  status             OrderStatus @default(PENDING_PAYMENT)
+  shopifyCartId      String?
+  shopifyCheckoutUrl String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  items              OrderItem[]
+}
+
+model OrderItem {
+  id             String   @id @default(cuid())
+  orderId        String
+  foodItemId     String
+  itemName       String
+  unitPricePence Int
+  quantity       Int
+  lineTotalPence Int
+  createdAt      DateTime @default(now())
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  foodItem FoodItem @relation(fields: [foodItemId], references: [id])
+}
