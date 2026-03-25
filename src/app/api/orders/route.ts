@@ -211,12 +211,31 @@ export async function POST(request: NextRequest) {
 
   const totalPence = subtotalPence + deliveryFeePence;
 
-  // Try Shopify integration, but fallback to demo mode if it fails
+  // Attempt Shopify checkout creation when provider is configured.
+  // When Shopify is configured, a successful cart creation is required before
+  // persisting the order so that stock is never decremented without a valid
+  // payment URL (prevents inconsistent order state).
   let shopifyCartId: string | null = null;
   let shopifyCheckoutUrl: string | null = null;
 
-  const itemsWithVariants = lines.filter((line) => line.shopifyVariantId);
-  if (isShopifyConfigured() && itemsWithVariants.length > 0) {
+  if (isShopifyConfigured()) {
+    const itemsWithVariants = lines.filter((line) => line.shopifyVariantId);
+
+    if (itemsWithVariants.length === 0) {
+      console.error(
+        "[Payment] Shopify is configured but none of the ordered items have a shopifyVariantId. " +
+          "Assign variant IDs to all menu items in the admin panel.",
+      );
+      return NextResponse.json(
+        { error: "Payment checkout is currently unavailable. Please contact support." },
+        { status: 503 },
+      );
+    }
+
+    console.info(
+      `[Payment] Attempting Shopify cart creation for order (${itemsWithVariants.length} line(s))`,
+    );
+
     try {
       const cart = await createShopifyCart(
         itemsWithVariants.map((line) => ({
@@ -226,9 +245,13 @@ export async function POST(request: NextRequest) {
       );
       shopifyCartId = cart.cartId;
       shopifyCheckoutUrl = cart.checkoutUrl;
+      console.info(`[Payment] Shopify cart created successfully: ${shopifyCartId}`);
     } catch (shopifyError) {
-      console.warn('Shopify integration failed, proceeding in demo mode:', shopifyError);
-      // Continue without Shopify—orders still go through for fulfillment
+      console.error("[Payment] Shopify cart creation failed:", shopifyError);
+      return NextResponse.json(
+        { error: "Payment service is temporarily unavailable. Please try again shortly." },
+        { status: 502 },
+      );
     }
   }
 
@@ -292,7 +315,7 @@ export async function POST(request: NextRequest) {
 
     // Also format and send email with order details to admins and customer
     const formattedTotal = `£${(totalPence / 100).toFixed(2)}`;
-    const confirmationPath = `/order-confirmation/${order.id}${shopifyCheckoutUrl ? "" : "?mode=demo"}`;
+    const confirmationPath = `/order-confirmation/${order.id}`;
     const baseUrl = getPublicBaseUrl(request);
     const confirmationUrl = `${baseUrl}${confirmationPath}`;
     const statusUrl = `${baseUrl}/order-status`;
@@ -355,16 +378,19 @@ export async function POST(request: NextRequest) {
       ].join("\n"),
     }).catch((err) => console.error('Customer confirmation email failed:', err));
 
+    console.info(`[Payment] Order ${order.id} created successfully (shopifyCartId=${shopifyCartId ?? "none"})`);
+
     return NextResponse.json(
       {
         orderId: order.id,
-        checkoutUrl: shopifyCheckoutUrl || `/order-confirmation/${order.id}?mode=demo`,
+        checkoutUrl: shopifyCheckoutUrl || `/order-confirmation/${order.id}`,
         isDemo: !shopifyCheckoutUrl,
       },
       { status: 201 },
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not create order";
+    console.error("[Payment] Order creation failed:", error);
     if (message.includes("Stock changed while placing order")) {
       return NextResponse.json({ error: message }, { status: 409 });
     }
