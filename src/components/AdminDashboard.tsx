@@ -44,6 +44,20 @@ export default function AdminDashboard() {
   const [topUpValues, setTopUpValues] = useState<Record<string, string>>({});
   const [expandedModifierItem, setExpandedModifierItem] = useState<string | null>(null);
 
+  // Edit form state
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editPriceGBP, setEditPriceGBP] = useState("");
+  const [editAllergensInput, setEditAllergensInput] = useState("");
+  const [editDietaryTagsInput, setEditDietaryTagsInput] = useState("");
+  const [editCrossContaminationNotes, setEditCrossContaminationNotes] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editShopifyVariantId, setEditShopifyVariantId] = useState("");
+  const [editUploading, setEditUploading] = useState(false);
+
   async function loadItems(keyToUse = adminKey) {
     if (!keyToUse) return;
 
@@ -220,6 +234,123 @@ export default function AdminDashboard() {
     }
 
     setSuccess(`${payload.item.name} updated.`);
+    await loadItems();
+  }
+
+  function startEditing(item: MenuItem) {
+    setEditingItemId(item.id);
+    setEditName(item.name);
+    setEditDescription(item.description);
+    setEditCategory(item.category);
+    setEditPriceGBP((item.pricePence / 100).toFixed(2));
+    setEditAllergensInput(item.allergens.join(", "));
+    setEditDietaryTagsInput(item.dietaryTags.join(", "));
+    setEditCrossContaminationNotes(item.crossContaminationNotes ?? "");
+    setEditImageUrl(item.imageUrl ?? "");
+    setEditImageFile(null);
+    setEditShopifyVariantId(item.shopifyVariantId ?? "");
+  }
+
+  function cancelEditing() {
+    setEditingItemId(null);
+    setEditImageFile(null);
+  }
+
+  async function saveEdit(itemId: string) {
+    setError(null);
+    setSuccess(null);
+
+    const price = Math.round(Number(editPriceGBP) * 100);
+    if (!Number.isFinite(price)) {
+      setError("Price must be a valid number.");
+      return;
+    }
+    if (price < 50) {
+      setError("Price must be at least £0.50.");
+      return;
+    }
+
+    let resolvedImageUrl = editImageUrl.trim();
+
+    if (editImageFile) {
+      setEditUploading(true);
+      const formData = new FormData();
+      formData.append("image", editImageFile);
+
+      const uploadResponse = await fetch("/api/admin/upload-image", {
+        method: "POST",
+        headers: { "x-admin-key": adminKey },
+        body: formData,
+      });
+
+      const uploadPayload = await uploadResponse.json();
+      setEditUploading(false);
+
+      if (!uploadResponse.ok) {
+        setError(uploadPayload.error ?? "Could not upload image.");
+        return;
+      }
+
+      resolvedImageUrl = uploadPayload.imageUrl;
+    }
+
+    const response = await fetch(`/api/admin/menu/${itemId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-key": adminKey,
+      },
+      body: JSON.stringify({
+        name: editName.trim(),
+        description: editDescription.trim(),
+        category: editCategory.trim(),
+        pricePence: price,
+        allergens: parseCommaSeparatedValues(editAllergensInput),
+        dietaryTags: parseCommaSeparatedValues(editDietaryTagsInput),
+        crossContaminationNotes: editCrossContaminationNotes.trim(),
+        imageUrl: resolvedImageUrl,
+        shopifyVariantId: editShopifyVariantId.trim(),
+      }),
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setError(payload.error ?? "Could not update item.");
+      return;
+    }
+
+    setSuccess(`${payload.item.name} updated.`);
+    setEditingItemId(null);
+    setEditImageFile(null);
+    await loadItems();
+  }
+
+  async function deleteItem(item: MenuItem) {
+    if (
+      !window.confirm(
+        `Hide "${item.name}" from customers? The item will remain in the database and can be restored by marking it available again.`,
+      )
+    ) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/admin/menu/${item.id}`, {
+      method: "DELETE",
+      headers: { "x-admin-key": adminKey },
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setError(payload.error ?? "Could not delete item.");
+      return;
+    }
+
+    setSuccess(`${payload.item.name} has been hidden from customers.`);
     await loadItems();
   }
 
@@ -431,15 +562,33 @@ export default function AdminDashboard() {
                             </p>
                           ) : null}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => toggleAvailability(item)}
-                          className={`rounded-lg px-3 py-2 text-xs font-semibold text-white ${
-                            item.isAvailable ? "bg-orange-600" : "bg-emerald-700"
-                          }`}
-                        >
-                          {item.isAvailable ? "Mark unavailable" : "Mark available"}
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              editingItemId === item.id ? cancelEditing() : startEditing(item)
+                            }
+                            className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-semibold text-white"
+                          >
+                            {editingItemId === item.id ? "Cancel edit" : "Edit"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleAvailability(item)}
+                            className={`rounded-lg px-3 py-2 text-xs font-semibold text-white ${
+                              item.isAvailable ? "bg-orange-600" : "bg-emerald-700"
+                            }`}
+                          >
+                            {item.isAvailable ? "Mark unavailable" : "Mark available"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void deleteItem(item)}
+                            className="rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white"
+                          >
+                            Delete
+                          </button>
+                        </div>
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
@@ -469,6 +618,97 @@ export default function AdminDashboard() {
                           {expandedModifierItem === item.id ? "Hide modifiers" : "Manage modifiers"}
                         </button>
                       </div>
+
+                      {editingItemId === item.id && (
+                        <div className="mt-3 border-t border-slate-200 pt-3">
+                          <h4 className="mb-2 text-sm font-semibold text-slate-800">Edit item</h4>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <input
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              placeholder="Dish name"
+                              required
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            />
+                            <input
+                              value={editCategory}
+                              onChange={(e) => setEditCategory(e.target.value)}
+                              placeholder="Category"
+                              required
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            />
+                            <input
+                              value={editPriceGBP}
+                              onChange={(e) => setEditPriceGBP(e.target.value)}
+                              placeholder="Price in GBP (e.g. 12.95)"
+                              required
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            />
+                            <input
+                              value={editShopifyVariantId}
+                              onChange={(e) => setEditShopifyVariantId(e.target.value)}
+                              placeholder="Shopify variant GID"
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            />
+                            <input
+                              value={editAllergensInput}
+                              onChange={(e) => setEditAllergensInput(e.target.value)}
+                              placeholder="Allergens (comma separated)"
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+                            />
+                            <input
+                              value={editDietaryTagsInput}
+                              onChange={(e) => setEditDietaryTagsInput(e.target.value)}
+                              placeholder="Dietary tags (comma separated)"
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+                            />
+                            <textarea
+                              value={editCrossContaminationNotes}
+                              onChange={(e) => setEditCrossContaminationNotes(e.target.value)}
+                              placeholder="Cross-contamination notes (optional)"
+                              rows={2}
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+                            />
+                            <input
+                              value={editImageUrl}
+                              onChange={(e) => setEditImageUrl(e.target.value)}
+                              placeholder="Image URL (optional)"
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+                            />
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              onChange={(e) => setEditImageFile(e.target.files?.[0] ?? null)}
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+                            />
+                            <textarea
+                              value={editDescription}
+                              onChange={(e) => setEditDescription(e.target.value)}
+                              placeholder="Description"
+                              required
+                              rows={3}
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+                            />
+                            <div className="flex gap-2 sm:col-span-2">
+                              <button
+                                type="button"
+                                disabled={editUploading}
+                                onClick={() => void saveEdit(item.id)}
+                                className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
+                              >
+                                {editUploading ? "Uploading…" : "Save changes"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelEditing}
+                                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {expandedModifierItem === item.id && (
                         <div className="mt-3 border-t border-slate-200 pt-3">
