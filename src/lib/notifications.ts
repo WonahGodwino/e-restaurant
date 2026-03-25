@@ -81,6 +81,12 @@ async function sendEmailNotification(
     case 'ORDER_STATUS_CHANGE':
       html = payload.message;
       break;
+    case 'NEW_RESERVATION':
+      html = payload.message;
+      break;
+    case 'NEW_CATERING_REQUEST':
+      html = payload.message;
+      break;
   }
 
   return sendEmail({

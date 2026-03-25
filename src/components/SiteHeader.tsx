@@ -7,6 +7,8 @@ import { useCart } from "@/components/CartProvider";
 const navItems = [
   { href: "/", label: "Home" },
   { href: "/menu", label: "Menu" },
+  { href: "/reservations", label: "Reservations" },
+  { href: "/catering", label: "Catering" },
   { href: "/order-status", label: "Track Order" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
