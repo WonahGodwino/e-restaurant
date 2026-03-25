@@ -124,6 +124,11 @@ model Order {
   updatedAt          DateTime    @updatedAt
   items              OrderItem[]
   statusHistory      OrderStatusHistory[]
+
+  @@index([customerEmail])
+  @@index([shopifyCartId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -208,6 +213,9 @@ model Notification {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   foodItem FoodItem? @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
 }
 
 model AuditLog {
@@ -217,6 +225,8 @@ model AuditLog {
   target    String
   details   String?
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model Reservation {
@@ -231,6 +241,9 @@ model Reservation {
   status          ReservationStatus @default(PENDING)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+
+  @@index([date])
+  @@index([status])
 }
 
 model CateringRequest {
@@ -246,4 +259,7 @@ model CateringRequest {
   status        CateringStatus @default(PENDING)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  @@index([eventDate])
+  @@index([status])
 }
