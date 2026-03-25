@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { logAuditEvent, getActorFromKey } from '@/lib/audit';
 
 const adminKeyHeader = 'x-admin-key';
 
@@ -84,6 +85,13 @@ export async function POST(request: NextRequest) {
         })
       )
     );
+
+    const actor = getActorFromKey(request.headers.get('x-admin-key'));
+    void logAuditEvent(actor, 'user.create', `User:${user.id}`, {
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    });
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {

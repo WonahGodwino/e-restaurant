@@ -13,6 +13,16 @@ enum OrderStatus {
   PAID
   FAILED
   CANCELLED
+  RECEIVED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+}
+
+enum FulfillmentType {
+  DELIVERY
+  PICKUP
 }
 
 enum UserRole {
@@ -80,7 +90,11 @@ model Order {
   customerName       String
   customerEmail      String
   customerPhone      String?
-  deliveryAddress    String
+  fulfillmentType    FulfillmentType @default(DELIVERY)
+  deliveryAddress    String?
+  deliveryPostcode   String?
+  deliveryZoneName   String?
+  deliveryFeePence   Int         @default(0)
   notes              String?
   totalPence         Int
   currency           String      @default("GBP")
@@ -90,6 +104,7 @@ model Order {
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   items              OrderItem[]
+  statusHistory      OrderStatusHistory[]
 }
 
 model OrderItem {
@@ -117,6 +132,16 @@ model OrderItemModifier {
 
   orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
   modifier  Modifier  @relation(fields: [modifierId], references: [id])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -162,4 +187,13 @@ model Notification {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   foodItem FoodItem? @relation(fields: [foodItemId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String
+  action    String
+  target    String
+  details   String?
+  createdAt DateTime @default(now())
 }

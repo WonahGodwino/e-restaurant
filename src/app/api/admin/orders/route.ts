@@ -1,29 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 
-function isAdminAuthorized(request: NextRequest): boolean {
-  const key = request.headers.get("x-admin-key");
-  const expected = process.env.ADMIN_DASHBOARD_KEY;
-  return Boolean(expected) && key === expected;
+const adminKeyHeader = 'x-admin-key';
+
+function isAdmin(request: NextRequest): boolean {
+  const key = request.headers.get(adminKeyHeader);
+  return Boolean(process.env.ADMIN_DASHBOARD_KEY) && key === process.env.ADMIN_DASHBOARD_KEY;
 }
 
+// GET /api/admin/orders - List all orders
 export async function GET(request: NextRequest) {
-  if (!isAdminAuthorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const orders = await db.order.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    include: {
-      items: {
-        orderBy: { createdAt: "asc" },
-        include: {
-          modifiers: true,
-        },
+  try {
+    const orders = await db.order.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        items: true,
       },
-    },
-  });
+    });
 
-  return NextResponse.json({ orders });
+    return NextResponse.json({ orders });
+  } catch (error) {
+    console.error('Failed to fetch orders:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch orders' },
+      { status: 500 }
+    );
+  }
 }

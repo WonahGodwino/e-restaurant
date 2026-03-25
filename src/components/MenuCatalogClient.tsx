@@ -10,16 +10,38 @@ import type { SelectedModifier } from "@/components/CartProvider";
 
 export default function MenuCatalogClient({ items }: { items: MenuItem[] }) {
   const [activeCategory, setActiveCategory] = useState("All");
+  const [activeDietaryTags, setActiveDietaryTags] = useState<string[]>([]);
   const { addItem, items: cartItems } = useCart();
   const [pendingItem, setPendingItem] = useState<MenuItem | null>(null);
 
   const categories = useMemo(() => ["All", ...Array.from(new Set(items.map((item) => item.category)))], [items]);
+  const dietaryTagOptions = useMemo(
+    () => Array.from(new Set(items.flatMap((item) => item.dietaryTags))).sort(),
+    [items],
+  );
 
   const filtered = useMemo(() => {
-    return activeCategory === "All"
-      ? items
-      : items.filter((item) => item.category === activeCategory);
-  }, [activeCategory, items]);
+    const categoryFiltered =
+      activeCategory === "All"
+        ? items
+        : items.filter((item) => item.category === activeCategory);
+
+    if (activeDietaryTags.length === 0) {
+      return categoryFiltered;
+    }
+
+    return categoryFiltered.filter((item) =>
+      activeDietaryTags.every((tag) => item.dietaryTags.includes(tag)),
+    );
+  }, [activeCategory, activeDietaryTags, items]);
+
+  function toggleDietaryTag(tag: string) {
+    setActiveDietaryTags((current) =>
+      current.includes(tag)
+        ? current.filter((value) => value !== tag)
+        : [...current, tag],
+    );
+  }
 
   function handleAddToCart(item: MenuItem) {
     if (item.modifierGroups && item.modifierGroups.length > 0) {
@@ -63,6 +85,43 @@ export default function MenuCatalogClient({ items }: { items: MenuItem[] }) {
           </button>
         ))}
       </div>
+
+      {dietaryTagOptions.length > 0 ? (
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
+            Filter by dietary tags
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {dietaryTagOptions.map((tag) => {
+              const active = activeDietaryTags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleDietaryTag(tag)}
+                  className={[
+                    "rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition",
+                    active
+                      ? "bg-emerald-500/25 text-emerald-100 border border-emerald-300/35"
+                      : "border border-white/10 bg-white/6 text-white/70 hover:bg-white/10 hover:text-white",
+                  ].join(" ")}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+            {activeDietaryTags.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setActiveDietaryTags([])}
+                className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/70 transition hover:bg-white/10 hover:text-white"
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <p className="text-sm text-white/58">
         {filtered.length} item{filtered.length === 1 ? "" : "s"} in {activeCategory === "All" ? "all categories" : activeCategory}

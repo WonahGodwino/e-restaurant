@@ -119,3 +119,87 @@ export function generateCustomerOrderConfirmationEmailTemplate(
     </p>
   `;
 }
+
+export function generateReservationEmailTemplate(data: {
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string | null;
+  partySize: number;
+  date: string;
+  time: string;
+  specialRequests?: string | null;
+}): string {
+  return `
+    <h2>🍽️ New Reservation Request</h2>
+    <p><strong>Name:</strong> ${data.customerName}</p>
+    <p><strong>Email:</strong> ${data.customerEmail}</p>
+    <p><strong>Phone:</strong> ${data.customerPhone || 'Not provided'}</p>
+    <p><strong>Party size:</strong> ${data.partySize}</p>
+    <p><strong>Date:</strong> ${data.date}</p>
+    <p><strong>Time:</strong> ${data.time}</p>
+    <p><strong>Special requests:</strong> ${data.specialRequests || 'None'}</p>
+    <p>Please confirm or contact the customer to discuss the booking.</p>
+  `;
+}
+
+export function generateCustomerReservationConfirmationEmailTemplate(data: {
+  customerName: string;
+  partySize: number;
+  date: string;
+  time: string;
+}): string {
+  return `
+    <h2>Thanks for your reservation request, ${data.customerName}!</h2>
+    <p>We have received your request and will be in touch shortly to confirm your booking.</p>
+    <h3>Reservation details</h3>
+    <ul>
+      <li><strong>Party size:</strong> ${data.partySize}</li>
+      <li><strong>Date:</strong> ${data.date}</li>
+      <li><strong>Time:</strong> ${data.time}</li>
+    </ul>
+    <p>If you need to make changes, please contact us directly.</p>
+  `;
+}
+
+export function generateCateringRequestEmailTemplate(data: {
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string | null;
+  eventType: string;
+  eventDate: string;
+  guestCount: number;
+  budget?: string | null;
+  notes?: string | null;
+}): string {
+  return `
+    <h2>🎉 New Catering Request</h2>
+    <p><strong>Name:</strong> ${data.customerName}</p>
+    <p><strong>Email:</strong> ${data.customerEmail}</p>
+    <p><strong>Phone:</strong> ${data.customerPhone || 'Not provided'}</p>
+    <p><strong>Event type:</strong> ${data.eventType}</p>
+    <p><strong>Event date:</strong> ${data.eventDate}</p>
+    <p><strong>Guest count:</strong> ${data.guestCount}</p>
+    <p><strong>Budget:</strong> ${data.budget || 'Not specified'}</p>
+    <p><strong>Notes:</strong> ${data.notes || 'None'}</p>
+    <p>Please follow up with the customer to discuss requirements and provide a quote.</p>
+  `;
+}
+
+export function generateCustomerCateringConfirmationEmailTemplate(data: {
+  customerName: string;
+  eventType: string;
+  eventDate: string;
+  guestCount: number;
+}): string {
+  return `
+    <h2>Thanks for your catering enquiry, ${data.customerName}!</h2>
+    <p>We have received your catering request and will be in touch shortly to discuss your requirements.</p>
+    <h3>Enquiry details</h3>
+    <ul>
+      <li><strong>Event type:</strong> ${data.eventType}</li>
+      <li><strong>Event date:</strong> ${data.eventDate}</li>
+      <li><strong>Guest count:</strong> ${data.guestCount}</li>
+    </ul>
+    <p>Our team will review your request and contact you with a tailored quote.</p>
+  `;
+}

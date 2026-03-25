@@ -5,11 +5,9 @@ import Link from "next/link";
 import { useCart } from "@/components/CartProvider";
 import { formatGBP } from "@/lib/currency";
 
-const DELIVERY_PENCE = 399;
-
 export default function CartPageClient() {
   const { items, subtotalPence, updateQuantity, clearCart } = useCart();
-  const totalPence = subtotalPence + (items.length > 0 ? DELIVERY_PENCE : 0);
+  const totalPence = subtotalPence;
 
   if (items.length === 0) {
     return (
@@ -97,7 +95,7 @@ export default function CartPageClient() {
           <h2 className="text-2xl font-semibold text-white">Order Summary</h2>
           <div className="mt-5 space-y-3 text-sm text-white/68">
             <div className="flex items-center justify-between"><span>Subtotal</span><span>{formatGBP(subtotalPence)}</span></div>
-            <div className="flex items-center justify-between"><span>Delivery</span><span>{formatGBP(DELIVERY_PENCE)}</span></div>
+            <div className="flex items-center justify-between"><span>Delivery</span><span>Chosen at checkout</span></div>
             <div className="flex items-center justify-between border-t border-white/10 pt-3 text-base font-semibold text-white"><span>Total</span><span>{formatGBP(totalPence)}</span></div>
           </div>
 
