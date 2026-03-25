@@ -63,6 +63,8 @@ model Order {
   customerPhone      String?
   fulfillmentType    FulfillmentType @default(DELIVERY)
   deliveryAddress    String?
+  deliveryPostcode   String?
+  deliveryZoneName   String?
   deliveryFeePence   Int         @default(0)
   notes              String?
   totalPence         Int

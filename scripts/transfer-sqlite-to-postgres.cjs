@@ -69,6 +69,8 @@ async function main() {
         customerEmail: item.customerEmail,
         customerPhone: item.customerPhone,
         fulfillmentType: item.fulfillmentType || "DELIVERY",
+        deliveryPostcode: item.deliveryPostcode,
+        deliveryZoneName: item.deliveryZoneName,
         deliveryAddress: item.deliveryAddress,
         deliveryFeePence: item.deliveryFeePence || 0,
         notes: item.notes,

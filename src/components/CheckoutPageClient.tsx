@@ -9,11 +9,21 @@ const DELIVERY_PENCE = 399;
 
 type FulfillmentType = "DELIVERY" | "PICKUP";
 
+type DeliveryQuote = {
+  serviceable: boolean;
+  reason?: string;
+  zoneName?: string;
+  deliveryFeePence: number;
+  minOrderPence: number;
+  totalPence: number;
+};
+
 type FormState = {
   name: string;
   email: string;
   phone: string;
   fulfillmentType: FulfillmentType;
+  deliveryPostcode: string;
   address: string;
   notes: string;
 };
@@ -25,21 +35,65 @@ export default function CheckoutPageClient() {
     email: "",
     phone: "",
     fulfillmentType: "DELIVERY",
+    deliveryPostcode: "",
     address: "",
     notes: "",
   });
+  const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuote | null>(null);
+  const [quotingDelivery, setQuotingDelivery] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const deliveryFeePence = useMemo(
-    () => (items.length > 0 && form.fulfillmentType === "DELIVERY" ? DELIVERY_PENCE : 0),
-    [items.length, form.fulfillmentType],
-  );
+  const deliveryFeePence = useMemo(() => {
+    if (form.fulfillmentType === "PICKUP") {
+      return 0;
+    }
+
+    return deliveryQuote?.deliveryFeePence ?? DELIVERY_PENCE;
+  }, [deliveryQuote?.deliveryFeePence, form.fulfillmentType]);
 
   const totalPence = useMemo(() => subtotalPence + deliveryFeePence, [deliveryFeePence, subtotalPence]);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function fetchDeliveryQuote(postcodeInput: string): Promise<DeliveryQuote | null> {
+    const postcode = postcodeInput.trim();
+
+    if (!postcode || form.fulfillmentType !== "DELIVERY") {
+      setDeliveryQuote(null);
+      return null;
+    }
+
+    setQuotingDelivery(true);
+
+    try {
+      const response = await fetch("/api/delivery/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subtotalPence,
+          postcode,
+          fulfillmentType: form.fulfillmentType,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        setDeliveryQuote(null);
+        return null;
+      }
+
+      const quote = payload as DeliveryQuote;
+      setDeliveryQuote(quote);
+      return quote;
+    } catch {
+      setDeliveryQuote(null);
+      return null;
+    } finally {
+      setQuotingDelivery(false);
+    }
   }
 
   async function placeOrder() {
@@ -60,6 +114,19 @@ export default function CheckoutPageClient() {
       return;
     }
 
+    if (form.fulfillmentType === "DELIVERY" && !form.deliveryPostcode.trim()) {
+      setError("Delivery postcode is required for delivery orders.");
+      return;
+    }
+
+    if (form.fulfillmentType === "DELIVERY") {
+      const quote = await fetchDeliveryQuote(form.deliveryPostcode);
+      if (!quote || !quote.serviceable) {
+        setError(quote?.reason ?? "Delivery is not available for this postcode.");
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     try {
@@ -71,6 +138,7 @@ export default function CheckoutPageClient() {
           customerEmail: form.email,
           customerPhone: form.phone,
           fulfillmentType: form.fulfillmentType,
+          deliveryPostcode: form.deliveryPostcode,
           deliveryAddress: form.address,
           notes: form.notes,
           items: items.map((item) => ({
@@ -112,7 +180,10 @@ export default function CheckoutPageClient() {
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <button
               type="button"
-              onClick={() => updateField("fulfillmentType", "DELIVERY")}
+              onClick={() => {
+                updateField("fulfillmentType", "DELIVERY");
+                void fetchDeliveryQuote(form.deliveryPostcode);
+              }}
               className={[
                 "rounded-2xl border px-4 py-3 text-sm font-semibold transition",
                 form.fulfillmentType === "DELIVERY"
@@ -124,7 +195,10 @@ export default function CheckoutPageClient() {
             </button>
             <button
               type="button"
-              onClick={() => updateField("fulfillmentType", "PICKUP")}
+              onClick={() => {
+                updateField("fulfillmentType", "PICKUP");
+                setDeliveryQuote(null);
+              }}
               className={[
                 "rounded-2xl border px-4 py-3 text-sm font-semibold transition",
                 form.fulfillmentType === "PICKUP"
@@ -140,7 +214,34 @@ export default function CheckoutPageClient() {
             <input value={form.email} onChange={(event) => updateField("email", event.target.value)} placeholder="Email" type="email" className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35" />
             <input value={form.phone} onChange={(event) => updateField("phone", event.target.value)} placeholder="Phone number" className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35" />
             {form.fulfillmentType === "DELIVERY" ? (
-              <textarea value={form.address} onChange={(event) => updateField("address", event.target.value)} placeholder="Delivery address" rows={4} className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35 sm:col-span-2" />
+              <>
+                <input
+                  value={form.deliveryPostcode}
+                  onChange={(event) => {
+                    updateField("deliveryPostcode", event.target.value);
+                    setDeliveryQuote(null);
+                  }}
+                  onBlur={() => {
+                    void fetchDeliveryQuote(form.deliveryPostcode);
+                  }}
+                  placeholder="Delivery postcode"
+                  className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35 sm:col-span-2"
+                />
+
+                {deliveryQuote ? (
+                  <div className={`rounded-2xl border px-4 py-3 text-sm sm:col-span-2 ${deliveryQuote.serviceable ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-100" : "border-red-400/25 bg-red-500/10 text-red-200"}`}>
+                    {deliveryQuote.serviceable
+                      ? `Delivery zone: ${deliveryQuote.zoneName || "Matched"}. Fee ${formatGBP(deliveryQuote.deliveryFeePence)}.`
+                      : deliveryQuote.reason || "Delivery unavailable for this postcode."}
+                  </div>
+                ) : quotingDelivery ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white/70 sm:col-span-2">
+                    Checking delivery options...
+                  </div>
+                ) : null}
+
+                <textarea value={form.address} onChange={(event) => updateField("address", event.target.value)} placeholder="Delivery address" rows={4} className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/35 sm:col-span-2" />
+              </>
             ) : (
               <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100 sm:col-span-2">
                 Pickup selected: no delivery address required.

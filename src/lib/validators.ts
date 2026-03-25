@@ -46,6 +46,7 @@ export const createOrderSchema = z.object({
   customerEmail: z.string().trim().email(),
   customerPhone: z.string().trim().max(30).optional().or(z.literal("")),
   fulfillmentType: z.enum(["DELIVERY", "PICKUP"]).optional().default("DELIVERY"),
+  deliveryPostcode: z.string().trim().max(16).optional().or(z.literal("")),
   deliveryAddress: z.string().trim().max(400).optional().or(z.literal("")),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
   items: z
@@ -58,6 +59,14 @@ export const createOrderSchema = z.object({
     .min(1),
 }).superRefine((input, ctx) => {
   if (input.fulfillmentType === "DELIVERY") {
+    if (!input.deliveryPostcode || input.deliveryPostcode.trim().length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["deliveryPostcode"],
+        message: "Delivery postcode is required for delivery orders.",
+      });
+    }
+
     if (!input.deliveryAddress || input.deliveryAddress.trim().length < 10) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
