@@ -13,6 +13,24 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  if (!isAdminAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await context.params;
+
+  const item = await db.foodItem.update({
+    where: { id },
+    data: { isAvailable: false },
+  });
+
+  const actor = getActorFromKey(request.headers.get("x-admin-key"));
+  void logAuditEvent(actor, "menu.delete", `FoodItem:${id}`, { name: item.name });
+
+  return NextResponse.json({ item });
+}
+
 export async function PATCH(request: NextRequest, context: RouteContext) {
   if (!isAdminAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
