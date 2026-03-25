@@ -158,6 +158,9 @@ export async function GET(request: NextRequest) {
       items: {
         orderBy: { createdAt: "asc" },
       },
+      statusHistory: {
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 
@@ -183,6 +186,7 @@ export async function GET(request: NextRequest) {
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         items: order.items,
+        statusHistory: order.statusHistory,
       },
     },
     { headers: rateLimitHeaders },

@@ -126,6 +126,9 @@ export default async function OrderConfirmationPage({
               <Link href="/menu" className="rounded-full bg-[var(--accent-strong)] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(240,90,40,0.22)]">
                 Order more dishes
               </Link>
+              <Link href="/order-status" className="rounded-full border border-white/10 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                Track this order
+              </Link>
               <Link href="/contact" className="rounded-full border border-white/10 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
                 Contact support
               </Link>
