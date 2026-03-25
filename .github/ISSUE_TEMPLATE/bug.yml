@@ -1,80 +1,37 @@
-name: "🐛 Bug Report"
-description: Report a bug or unexpected behaviour
-title: "[Bug]: "
+name: Bug report
+description: Report a defect in the app
+title: "fix: "
 labels: ["bug"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Thanks for taking the time to report a bug. Please provide as much detail as possible.
-
   - type: textarea
-    id: description
+    id: what-happened
     attributes:
-      label: Bug Description
-      description: A clear and concise description of the bug.
+      label: What happened?
+      placeholder: Clear bug description.
     validations:
       required: true
 
   - type: textarea
     id: steps
     attributes:
-      label: Steps to Reproduce
-      description: Step-by-step instructions to reproduce the issue.
+      label: Steps to reproduce
       placeholder: |
-        1. Go to '...'
-        2. Click on '...'
-        3. See error
+        1. Go to ...
+        2. Click ...
+        3. Observe ...
     validations:
       required: true
 
   - type: textarea
     id: expected
     attributes:
-      label: Expected Behaviour
-      description: What did you expect to happen?
+      label: Expected behavior
+      placeholder: What should happen instead?
     validations:
       required: true
 
-  - type: textarea
-    id: actual
+  - type: input
+    id: environment
     attributes:
-      label: Actual Behaviour
-      description: What actually happened?
-    validations:
-      required: true
-
-  - type: textarea
-    id: screenshots
-    attributes:
-      label: Screenshots / Logs
-      description: If applicable, add screenshots or error logs.
-    validations:
-      required: false
-
-  - type: dropdown
-    id: severity
-    attributes:
-      label: Severity
-      options:
-        - Critical (site broken)
-        - High (major feature broken)
-        - Medium (feature partially broken)
-        - Low (minor visual/UX issue)
-    validations:
-      required: true
-
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area
-      options:
-        - Customer UI
-        - Admin UI
-        - API / Backend
-        - Shopify Integration
-        - Database / Prisma
-        - Authentication
-        - Other
-    validations:
-      required: true
+      label: Environment
+      placeholder: local/staging/production + browser/device

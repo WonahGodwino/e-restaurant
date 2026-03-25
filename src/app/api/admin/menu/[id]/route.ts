@@ -1,53 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { isAuthorised } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { updateFoodItemSchema } from "@/lib/validators";
 
-type Params = { params: Promise<{ id: string }> };
-
-/** PUT /api/admin/menu/[id] – update a menu item */
-export async function PUT(req: NextRequest, { params }: Params) {
-  if (!isAuthorised(req)) {
-    return NextResponse.json({ error: "Unauthorised." }, { status: 401 });
-  }
-  const { id } = await params;
-  const itemId = parseInt(id, 10);
-  if (isNaN(itemId)) {
-    return NextResponse.json({ error: "Invalid id." }, { status: 400 });
-  }
-  try {
-    const body = await req.json();
-    const item = await prisma.menuItem.update({
-      where: { id: itemId },
-      data: {
-        name: body.name,
-        description: body.description,
-        category: body.category,
-        priceGbp: body.priceGbp !== undefined ? Number(body.priceGbp) : undefined,
-        imageUrl: body.imageUrl,
-        shopifyVariantId: body.shopifyVariantId,
-        available: body.available,
-      },
-    });
-    return NextResponse.json(item);
-  } catch {
-    return NextResponse.json({ error: "Failed to update item." }, { status: 500 });
-  }
+function isAdminAuthorized(request: NextRequest): boolean {
+  const key = request.headers.get("x-admin-key");
+  const expected = process.env.ADMIN_DASHBOARD_KEY;
+  return Boolean(expected) && key === expected;
 }
 
-/** DELETE /api/admin/menu/[id] – delete a menu item */
-export async function DELETE(req: NextRequest, { params }: Params) {
-  if (!isAuthorised(req)) {
-    return NextResponse.json({ error: "Unauthorised." }, { status: 401 });
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  if (!isAdminAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { id } = await params;
-  const itemId = parseInt(id, 10);
-  if (isNaN(itemId)) {
-    return NextResponse.json({ error: "Invalid id." }, { status: 400 });
+
+  const { id } = await context.params;
+  const body = await request.json();
+  const parsed = updateFoodItemSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
-  try {
-    await prisma.menuItem.delete({ where: { id: itemId } });
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Failed to delete item." }, { status: 500 });
-  }
+
+  const input = parsed.data;
+
+  const item = await db.foodItem.update({
+    where: { id },
+    data: {
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.category !== undefined ? { category: input.category } : {}),
+      ...(input.pricePence !== undefined ? { pricePence: input.pricePence } : {}),
+      ...(input.stockQuantity !== undefined ? { stockQuantity: input.stockQuantity } : {}),
+      ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl || null } : {}),
+      ...(input.shopifyVariantId !== undefined
+        ? { shopifyVariantId: input.shopifyVariantId || null }
+        : {}),
+      ...(input.isAvailable !== undefined ? { isAvailable: input.isAvailable } : {}),
+    },
+  });
+
+  return NextResponse.json({ item });
 }

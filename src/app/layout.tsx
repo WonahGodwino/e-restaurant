@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "The British Table – Online Restaurant",
-  description:
-    "Order delicious food online from The British Table, delivered to your door across the UK.",
+  title: "E-Restaurant UK",
+  description: "UK-ready online restaurant ordering with Shopify checkout",
 };
 
 export default function RootLayout({
@@ -14,27 +24,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-GB" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-stone-50 text-stone-900 font-sans">
-        <header className="bg-stone-900 text-white shadow-md">
-          <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="text-xl font-bold tracking-tight hover:text-amber-400 transition-colors">
-              🍽️ The British Table
+    <html
+      lang="en-GB"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col bg-slate-100 text-slate-900">
+        <header className="border-b border-slate-200 bg-white/90">
+          <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+            <Link href="/" className="text-sm font-bold tracking-wide text-slate-900">
+              E-Restaurant UK
             </Link>
-            <nav className="flex gap-6 text-sm font-medium">
-              <Link href="/" className="hover:text-amber-400 transition-colors">
-                Menu
-              </Link>
-              <Link href="/admin" className="hover:text-amber-400 transition-colors">
-                Admin
-              </Link>
-            </nav>
-          </div>
+            <Link href="/admin" className="text-sm font-medium text-slate-600 hover:text-slate-900">
+              Admin
+            </Link>
+          </nav>
         </header>
-        <main className="flex-1">{children}</main>
-        <footer className="bg-stone-900 text-stone-400 text-sm text-center py-4 mt-8">
-          © {new Date().getFullYear()} The British Table · UK · All prices include VAT
-        </footer>
+        {children}
       </body>
     </html>
   );

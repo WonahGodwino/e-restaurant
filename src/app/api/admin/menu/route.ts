@@ -1,55 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { isAuthorised } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { createFoodItemSchema } from "@/lib/validators";
 
-/** GET /api/admin/menu – list all menu items (admin) */
-export async function GET(req: NextRequest) {
-  if (!isAuthorised(req)) {
-    return NextResponse.json({ error: "Unauthorised." }, { status: 401 });
-  }
-  const items = await prisma.menuItem.findMany({
-    orderBy: [{ category: "asc" }, { name: "asc" }],
-  });
-  return NextResponse.json(items);
+function isAdminAuthorized(request: NextRequest): boolean {
+  const key = request.headers.get("x-admin-key");
+  const expected = process.env.ADMIN_DASHBOARD_KEY;
+  return Boolean(expected) && key === expected;
 }
 
-/** POST /api/admin/menu – create a new menu item */
-export async function POST(req: NextRequest) {
-  if (!isAuthorised(req)) {
-    return NextResponse.json({ error: "Unauthorised." }, { status: 401 });
+export async function GET(request: NextRequest) {
+  if (!isAdminAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  try {
-    const body = await req.json();
-    const { name, description, category, priceGbp, imageUrl, shopifyVariantId, available } = body as {
-      name: string;
-      description: string;
-      category: string;
-      priceGbp: number;
-      imageUrl?: string;
-      shopifyVariantId?: string;
-      available?: boolean;
-    };
 
-    if (!name || !description || !category || priceGbp == null) {
-      return NextResponse.json(
-        { error: "name, description, category and priceGbp are required." },
-        { status: 400 }
-      );
-    }
+  const items = await db.foodItem.findMany({
+    orderBy: [{ category: "asc" }, { name: "asc" }],
+  });
 
-    const item = await prisma.menuItem.create({
-      data: {
-        name,
-        description,
-        category,
-        priceGbp: Number(priceGbp),
-        imageUrl: imageUrl ?? "",
-        shopifyVariantId: shopifyVariantId ?? "",
-        available: available !== false,
-      },
-    });
-    return NextResponse.json(item, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Failed to create item." }, { status: 500 });
+  return NextResponse.json({ items });
+}
+
+export async function POST(request: NextRequest) {
+  if (!isAdminAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const body = await request.json();
+  const parsed = createFoodItemSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
+  const input = parsed.data;
+  const item = await db.foodItem.create({
+    data: {
+      name: input.name,
+      description: input.description,
+      category: input.category,
+      pricePence: input.pricePence,
+      stockQuantity: input.stockQuantity,
+      imageUrl: input.imageUrl || null,
+      shopifyVariantId: input.shopifyVariantId || null,
+      isAvailable: input.isAvailable,
+    },
+  });
+
+  return NextResponse.json({ item }, { status: 201 });
 }

@@ -1,60 +1,40 @@
-const SHOPIFY_STORE_DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN ?? "";
-const SHOPIFY_STOREFRONT_ACCESS_TOKEN =
-  process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? "";
-
-const STOREFRONT_API_URL = `https://${SHOPIFY_STORE_DOMAIN}/api/2024-04/graphql.json`;
-
-interface ShopifyLineItem {
-  variantId: string;
+type ShopifyCartLineInput = {
+  merchandiseId: string;
   quantity: number;
-}
+};
 
-interface ShopifyAddress {
-  firstName: string;
-  lastName: string;
-  address1: string;
-  city: string;
-  country: string;
-  zip: string;
-  phone?: string;
-}
-
-interface ShopifyCheckoutResponse {
-  checkoutCreate: {
-    checkout: {
-      id: string;
-      webUrl: string;
-    } | null;
-    checkoutUserErrors: Array<{ message: string; field: string[] }>;
+type ShopifyCartCreateResponse = {
+  data?: {
+    cartCreate?: {
+      cart?: {
+        id: string;
+        checkoutUrl: string;
+      };
+      userErrors?: Array<{ field?: string[]; message: string }>;
+    };
   };
-}
+  errors?: Array<{ message: string }>;
+};
 
-/**
- * Creates a Shopify Storefront checkout session and returns the hosted checkout URL.
- * Call this from a Server Action or API route – never expose the token in client code.
- */
-export async function createShopifyCheckout(
-  lineItems: ShopifyLineItem[],
-  shippingAddress: ShopifyAddress,
-  email: string
-): Promise<string> {
-  if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
-    throw new Error(
-      "Shopify environment variables are not configured. " +
-        "Set NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN and NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN."
-    );
+export async function createShopifyCart(lines: ShopifyCartLineInput[]) {
+  const storeDomain = process.env.SHOPIFY_STORE_DOMAIN;
+  const storefrontToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+
+  if (!storeDomain || !storefrontToken) {
+    throw new Error("Shopify environment variables are missing.");
   }
 
-  const mutation = `
-    mutation checkoutCreate($input: CheckoutCreateInput!) {
-      checkoutCreate(input: $input) {
-        checkout {
+  const endpoint = `https://${storeDomain}/api/2025-01/graphql.json`;
+  const query = `
+    mutation CartCreate($input: CartInput!) {
+      cartCreate(input: $input) {
+        cart {
           id
-          webUrl
+          checkoutUrl
         }
-        checkoutUserErrors {
-          message
+        userErrors {
           field
+          message
         }
       }
     }
@@ -62,40 +42,45 @@ export async function createShopifyCheckout(
 
   const variables = {
     input: {
-      email,
-      lineItems: lineItems.map((item) => ({
-        variantId: item.variantId,
-        quantity: item.quantity,
-      })),
-      shippingAddress,
+      lines,
+      buyerIdentity: {
+        countryCode: "GB",
+      },
     },
   };
 
-  const response = await fetch(STOREFRONT_API_URL, {
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Shopify-Storefront-Access-Token": SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+      "X-Shopify-Storefront-Access-Token": storefrontToken,
     },
-    body: JSON.stringify({ query: mutation, variables }),
+    body: JSON.stringify({ query, variables }),
+    cache: "no-store",
   });
 
   if (!response.ok) {
-    throw new Error(`Shopify API error: ${response.status} ${response.statusText}`);
+    throw new Error("Failed to connect to Shopify checkout service.");
   }
 
-  const json = (await response.json()) as { data: ShopifyCheckoutResponse };
-  const { checkout, checkoutUserErrors } = json.data.checkoutCreate;
+  const json = (await response.json()) as ShopifyCartCreateResponse;
 
-  if (checkoutUserErrors.length > 0) {
-    throw new Error(
-      `Shopify checkout errors: ${checkoutUserErrors.map((e) => e.message).join(", ")}`
-    );
+  if (json.errors?.length) {
+    throw new Error(json.errors[0]?.message ?? "Shopify error.");
   }
 
-  if (!checkout) {
-    throw new Error("Shopify did not return a checkout session.");
+  const userErrors = json.data?.cartCreate?.userErrors ?? [];
+  if (userErrors.length) {
+    throw new Error(userErrors[0]?.message ?? "Shopify checkout could not be created.");
   }
 
-  return checkout.webUrl;
+  const cart = json.data?.cartCreate?.cart;
+  if (!cart?.checkoutUrl) {
+    throw new Error("Shopify did not return a checkout URL.");
+  }
+
+  return {
+    cartId: cart.id,
+    checkoutUrl: cart.checkoutUrl,
+  };
 }
