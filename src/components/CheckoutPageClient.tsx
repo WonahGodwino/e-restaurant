@@ -109,8 +109,8 @@ export default function CheckoutPageClient() {
       return;
     }
 
-    if (form.fulfillmentType === "DELIVERY" && !form.address.trim()) {
-      setError("Delivery address is required for delivery orders.");
+    if (form.fulfillmentType === "DELIVERY" && form.address.trim().length < 10) {
+      setError("Please enter a full delivery address (at least 10 characters).");
       return;
     }
 
@@ -152,7 +152,12 @@ export default function CheckoutPageClient() {
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload.error ?? "Could not place order.");
+        // Surface first field-level Zod error if available
+        const fieldErrors = payload.details?.fieldErrors;
+        const firstFieldError = fieldErrors
+          ? Object.values(fieldErrors as Record<string, string[]>).flat()[0]
+          : undefined;
+        setError(firstFieldError ?? payload.error ?? "Could not place order.");
         return;
       }
 
