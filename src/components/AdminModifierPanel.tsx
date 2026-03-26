@@ -28,7 +28,10 @@ export default function AdminModifierPanel({ adminKey, item, allItems, onUpdated
   const [newModifierName, setNewModifierName] = useState("");
   const [newModifierPriceGBP, setNewModifierPriceGBP] = useState("0.50");
   const [newModifierIndependentOrder, setNewModifierIndependentOrder] = useState(false);
+  const [newModifierImageFile, setNewModifierImageFile] = useState<File | null>(null);
+  const [newModifierImageUrl, setNewModifierImageUrl] = useState("");
   const [creatingNewModifierItem, setCreatingNewModifierItem] = useState(false);
+  const [uploadingModifierImage, setUploadingModifierImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -138,6 +141,35 @@ export default function AdminModifierPanel({ adminKey, item, allItems, onUpdated
 
     setCreatingNewModifierItem(true);
     try {
+      let resolvedImageUrl = newModifierImageUrl.trim();
+
+      // Upload image if file is selected
+      if (newModifierImageFile) {
+        setUploadingModifierImage(true);
+        const formData = new FormData();
+        formData.append("image", newModifierImageFile);
+
+        const uploadResponse = await fetch("/api/admin/upload-image", {
+          method: "POST",
+          headers: {
+            "x-admin-key": adminKey,
+          },
+          body: formData,
+        });
+
+        setUploadingModifierImage(false);
+
+        if (!uploadResponse.ok) {
+          const uploadPayload = await uploadResponse.json();
+          setError(uploadPayload.error ?? "Could not upload image.");
+          setCreatingNewModifierItem(false);
+          return;
+        }
+
+        const uploadPayload = await uploadResponse.json();
+        resolvedImageUrl = uploadPayload.imageUrl;
+      }
+
       const response = await fetch("/api/admin/menu", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
@@ -150,7 +182,7 @@ export default function AdminModifierPanel({ adminKey, item, allItems, onUpdated
           allergens: [],
           dietaryTags: [],
           crossContaminationNotes: "",
-          imageUrl: "",
+          imageUrl: resolvedImageUrl,
           shopifyVariantId: "",
           isAvailable: newModifierIndependentOrder,
         }),
@@ -175,6 +207,8 @@ export default function AdminModifierPanel({ adminKey, item, allItems, onUpdated
       setNewModifierName("");
       setNewModifierPriceGBP("0.50");
       setNewModifierIndependentOrder(false);
+      setNewModifierImageFile(null);
+      setNewModifierImageUrl("");
       await onUpdated();
     } catch {
       setError("Unexpected error creating modifier food item.");
@@ -373,12 +407,58 @@ export default function AdminModifierPanel({ adminKey, item, allItems, onUpdated
               <button
                 type="button"
                 onClick={() => void createFoodItemAsModifier()}
-                disabled={creatingNewModifierItem}
+                disabled={creatingNewModifierItem || uploadingModifierImage}
                 className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
               >
-                {creatingNewModifierItem ? "Adding..." : "Add as option"}
+                {uploadingModifierImage ? "Uploading..." : creatingNewModifierItem ? "Adding..." : "Add as option"}
               </button>
             </div>
+
+            {/* Image upload section */}
+            <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-2">
+              <p className="text-xs font-medium text-slate-600">Add image (optional)</p>
+              <div className="grid gap-2">
+                {/* Image URL input */}
+                <input
+                  type="url"
+                  value={newModifierImageUrl}
+                  onChange={(e) => setNewModifierImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  disabled={newModifierImageFile !== null}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm disabled:bg-slate-50"
+                />
+
+                {/* File upload */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setNewModifierImageFile(file);
+                    if (file) setNewModifierImageUrl(""); // Clear URL when file selected
+                  }}
+                  disabled={newModifierImageUrl.trim().length > 0}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-xs disabled:bg-slate-50"
+                />
+
+                {/* Image preview */}
+                {(newModifierImageFile || newModifierImageUrl.trim()) && (
+                  <div className="rounded-lg border border-slate-200 p-2">
+                    <img
+                      src={
+                        newModifierImageFile
+                          ? URL.createObjectURL(newModifierImageFile)
+                          : newModifierImageUrl.trim()
+                      }
+                      alt="Preview"
+                      className="h-20 w-20 rounded-lg object-cover"
+                      onError={() => setNewModifierImageUrl("")}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
             <label className="flex items-center gap-2 text-xs text-slate-700">
               <input
                 type="checkbox"
