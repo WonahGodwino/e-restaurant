@@ -60,7 +60,7 @@ export async function PUT(
         subject:
           reservation.status === "CONFIRMED"
             ? "Your reservation is confirmed"
-            : "Update on your reservation request",
+            : "Your reservation request was rejected",
         html: generateReservationDecisionEmailTemplate({
           customerName: reservation.customerName,
           partySize: reservation.partySize,
@@ -74,10 +74,11 @@ export async function PUT(
 
     if (statusChanged) {
       const reasonSuffix = decisionReason ? ` Reason: ${decisionReason}` : "";
+      const statusLabel = reservation.status === "CANCELLED" ? "rejected" : reservation.status.toLowerCase();
       void notifyAllAdminsAndCooks(
         "NEW_RESERVATION",
-        `Reservation ${reservation.status.toLowerCase()}`,
-        `${reservation.customerName}'s reservation for ${reservation.partySize} on ${new Date(reservation.date).toLocaleDateString("en-GB")} at ${reservation.time} is now ${reservation.status}.${reasonSuffix}`,
+        `Reservation ${statusLabel}`,
+        `${reservation.customerName}'s reservation for ${reservation.partySize} on ${new Date(reservation.date).toLocaleDateString("en-GB")} at ${reservation.time} is now ${statusLabel}.${reasonSuffix}`,
       );
 
       void db.auditLog.create({
@@ -85,7 +86,7 @@ export async function PUT(
           actor: "admin",
           action: "RESERVATION_STATUS_UPDATED",
           target: reservation.id,
-          details: `Status changed from ${existingReservation.status} to ${reservation.status}.${reasonSuffix}`,
+          details: `Status changed from ${existingReservation.status} to ${statusLabel.toUpperCase()}.${reasonSuffix}`,
         },
       });
     }

@@ -25,6 +25,18 @@ const statusColors: Record<ReservationStatus, string> = {
   CANCELLED: "bg-red-100 text-red-800",
 };
 
+const statusLabels: Record<ReservationStatus, string> = {
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  CANCELLED: "Rejected",
+};
+
+const actionLabels: Record<ReservationStatus, string> = {
+  PENDING: "Pending",
+  CONFIRMED: "Approve",
+  CANCELLED: "Reject",
+};
+
 interface Props {
   adminKey: string;
 }
@@ -176,7 +188,7 @@ export default function ReservationsPanel({ adminKey }: Props) {
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[reservation.status]}`}
                   >
-                    {reservation.status}
+                    {statusLabels[reservation.status]}
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-slate-600">
@@ -216,7 +228,7 @@ export default function ReservationsPanel({ adminKey }: Props) {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="text-xs font-medium text-slate-500">Update status:</span>
+              <span className="text-xs font-medium text-slate-500">Decision:</span>
               {(["PENDING", "CONFIRMED", "CANCELLED"] as const).map((s) => (
                 <button
                   key={s}
@@ -228,7 +240,7 @@ export default function ReservationsPanel({ adminKey }: Props) {
                       : "border border-slate-300 text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  {s.charAt(0) + s.slice(1).toLowerCase()}
+                  {actionLabels[s]}
                 </button>
               ))}
               <button

@@ -176,12 +176,13 @@ export function generateReservationDecisionEmailTemplate(data: {
   reason?: string | null;
 }): string {
   const isConfirmed = data.status === "CONFIRMED";
+  const statusLabel = isConfirmed ? "Confirmed" : "Rejected";
   const heading = isConfirmed
     ? `Your reservation is confirmed, ${data.customerName}!`
-    : `Update on your reservation request, ${data.customerName}`;
+    : `Your reservation request was not approved, ${data.customerName}`;
   const summary = isConfirmed
     ? "Great news. Your table is now reserved."
-    : "We are sorry, we are unable to confirm this reservation request.";
+    : "We are sorry, your reservation request has been rejected.";
   const reasonSection = !isConfirmed && data.reason
     ? `<p><strong>Reason:</strong> ${data.reason}</p>`
     : "";
@@ -194,7 +195,7 @@ export function generateReservationDecisionEmailTemplate(data: {
       <li><strong>Party size:</strong> ${data.partySize}</li>
       <li><strong>Date:</strong> ${data.date}</li>
       <li><strong>Time:</strong> ${data.time}</li>
-      <li><strong>Status:</strong> ${data.status}</li>
+      <li><strong>Status:</strong> ${statusLabel}</li>
     </ul>
     ${reasonSection}
     <p>If you need any assistance, please contact us and we will be glad to help.</p>
