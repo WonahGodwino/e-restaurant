@@ -203,7 +203,7 @@ export default function AdminPage() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "menu" && <AdminDashboard />}
+      {activeTab === "menu" && <AdminDashboard adminKey={adminKey} />}
       {activeTab === "orders" && <AdminOrdersPanel adminKey={adminKey} />}
       {activeTab === "notifications" && <NotificationPanel adminKey={adminKey} />}
       {activeTab === "notif-dashboard" && (

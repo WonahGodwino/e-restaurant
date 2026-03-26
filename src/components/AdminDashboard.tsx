@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { formatGBP } from "@/lib/currency";
 import AdminModifierPanel from "@/components/AdminModifierPanel";
@@ -17,7 +17,11 @@ function parseCommaSeparatedValues(input: string): string[] {
   );
 }
 
-export default function AdminDashboard() {
+type AdminDashboardProps = {
+  adminKey?: string;
+};
+
+export default function AdminDashboard({ adminKey: externalAdminKey }: AdminDashboardProps) {
   const [adminKey, setAdminKey] = useState(() => {
     if (typeof window === "undefined") {
       return "";
@@ -44,7 +48,15 @@ export default function AdminDashboard() {
   const [topUpValues, setTopUpValues] = useState<Record<string, string>>({});
   const [expandedModifierItem, setExpandedModifierItem] = useState<string | null>(null);
 
-  async function loadItems(keyToUse = adminKey) {
+  const effectiveAdminKey = (externalAdminKey ?? adminKey).trim();
+
+  useEffect(() => {
+    if (!effectiveAdminKey) return;
+    void loadItems(effectiveAdminKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveAdminKey]);
+
+  async function loadItems(keyToUse = effectiveAdminKey) {
     if (!keyToUse) return;
 
     setLoading(true);
@@ -106,7 +118,7 @@ export default function AdminDashboard() {
       const uploadResponse = await fetch("/api/admin/upload-image", {
         method: "POST",
         headers: {
-          "x-admin-key": adminKey,
+          "x-admin-key": effectiveAdminKey,
         },
         body: formData,
       });
@@ -126,7 +138,7 @@ export default function AdminDashboard() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-admin-key": adminKey,
+        "x-admin-key": effectiveAdminKey,
       },
       body: JSON.stringify({
         name,
@@ -180,7 +192,7 @@ export default function AdminDashboard() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-admin-key": adminKey,
+        "x-admin-key": effectiveAdminKey,
       },
       body: JSON.stringify({ quantityToAdd }),
     });
@@ -205,7 +217,7 @@ export default function AdminDashboard() {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "x-admin-key": adminKey,
+        "x-admin-key": effectiveAdminKey,
       },
       body: JSON.stringify({
         isAvailable: !item.isAvailable,
@@ -238,7 +250,8 @@ export default function AdminDashboard() {
         </p>
       </header>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      {!externalAdminKey && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">Admin Access</h2>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
           <input
@@ -263,7 +276,8 @@ export default function AdminDashboard() {
             Refresh menu
           </button>
         </div>
-      </section>
+        </section>
+      )}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">Add Menu Item</h2>
@@ -473,7 +487,7 @@ export default function AdminDashboard() {
                       {expandedModifierItem === item.id && (
                         <div className="mt-3 border-t border-slate-200 pt-3">
                           <AdminModifierPanel
-                            adminKey={adminKey}
+                            adminKey={effectiveAdminKey}
                             item={item}
                             onUpdated={() => void loadItems()}
                           />
