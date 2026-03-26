@@ -14,6 +14,8 @@ interface Reservation {
   time: string;
   specialRequests: string | null;
   status: ReservationStatus;
+  decisionReason: string | null;
+  decidedAt: string | null;
   createdAt: string;
 }
 
@@ -48,7 +50,11 @@ export default function ReservationsPanel({ adminKey }: Props) {
         return;
       }
       const data = await response.json();
-      setReservations(data.reservations ?? []);
+      const incoming = (data.reservations ?? []) as Reservation[];
+      setReservations(incoming);
+      setDecisionReasonById(
+        Object.fromEntries(incoming.map((reservation) => [reservation.id, reservation.decisionReason ?? ""])),
+      );
     } catch {
       setError("Failed to load reservations.");
     } finally {
@@ -78,15 +84,14 @@ export default function ReservationsPanel({ adminKey }: Props) {
         },
         body: JSON.stringify({ status, decisionReason }),
       });
+      const payload = await response.json().catch(() => ({}));
       if (response.ok) {
         setReservations((prev) =>
-          prev.map((r) => (r.id === id ? { ...r, status } : r)),
+          prev.map((r) => (r.id === id ? { ...r, ...(payload.reservation ?? { status }) } : r)),
         );
-        if (status !== "CANCELLED") {
-          setDecisionReasonById((prev) => ({ ...prev, [id]: "" }));
-        }
+        const nextReason = payload.reservation?.decisionReason ?? (status === "CANCELLED" ? decisionReason : "");
+        setDecisionReasonById((prev) => ({ ...prev, [id]: nextReason }));
       } else {
-        const payload = await response.json().catch(() => ({}));
         const fieldErrors = payload.details?.fieldErrors;
         const firstFieldError = fieldErrors
           ? Object.values(fieldErrors as Record<string, string[]>).flat()[0]
@@ -252,6 +257,20 @@ export default function ReservationsPanel({ adminKey }: Props) {
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
               />
             </div>
+
+            {(reservation.decisionReason || reservation.decidedAt) && (
+              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                <p className="font-medium text-slate-800">Latest decision</p>
+                {reservation.decidedAt && (
+                  <p className="text-xs text-slate-500">
+                    {new Date(reservation.decidedAt).toLocaleString("en-GB")}
+                  </p>
+                )}
+                {reservation.decisionReason && (
+                  <p className="mt-1">{reservation.decisionReason}</p>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

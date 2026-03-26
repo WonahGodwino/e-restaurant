@@ -34,12 +34,18 @@ export async function PUT(
       return NextResponse.json({ error: "Reservation not found." }, { status: 404 });
     }
 
+    const decisionReason = parsed.data.decisionReason?.trim() || null;
+    const shouldRecordDecision = parsed.data.status === "CONFIRMED" || parsed.data.status === "CANCELLED";
+
     const reservation = await db.reservation.update({
       where: { id },
-      data: { status: parsed.data.status },
+      data: {
+        status: parsed.data.status,
+        decisionReason: parsed.data.status === "CANCELLED" ? decisionReason : null,
+        decidedAt: shouldRecordDecision ? new Date() : null,
+      },
     });
 
-    const decisionReason = parsed.data.decisionReason?.trim() || null;
     const statusChanged = existingReservation.status !== reservation.status;
 
     if (statusChanged && (reservation.status === "CONFIRMED" || reservation.status === "CANCELLED")) {
@@ -73,6 +79,15 @@ export async function PUT(
         `Reservation ${reservation.status.toLowerCase()}`,
         `${reservation.customerName}'s reservation for ${reservation.partySize} on ${new Date(reservation.date).toLocaleDateString("en-GB")} at ${reservation.time} is now ${reservation.status}.${reasonSuffix}`,
       );
+
+      void db.auditLog.create({
+        data: {
+          actor: "admin",
+          action: "RESERVATION_STATUS_UPDATED",
+          target: reservation.id,
+          details: `Status changed from ${existingReservation.status} to ${reservation.status}.${reasonSuffix}`,
+        },
+      });
     }
 
     return NextResponse.json({ reservation });
