@@ -489,6 +489,7 @@ export default function AdminDashboard({ adminKey: externalAdminKey }: AdminDash
                           <AdminModifierPanel
                             adminKey={effectiveAdminKey}
                             item={item}
+                            allItems={items}
                             onUpdated={() => void loadItems()}
                           />
                         </div>
