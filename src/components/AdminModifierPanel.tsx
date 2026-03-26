@@ -93,6 +93,7 @@ export default function AdminModifierPanel({ adminKey, item, allItems, onUpdated
           displayOrder: item.modifierGroups.length,
           modifiers: validModifiers.map((m, i) => ({
             name: m.name.trim(),
+            linkedFoodItemId: m.linkedFoodItemId || "",
             priceDeltaPence: Math.round(parseFloat(m.priceDeltaPence || "0") * 100),
             isDefault: m.isDefault,
             displayOrder: i,
@@ -234,6 +235,11 @@ export default function AdminModifierPanel({ adminKey, item, allItems, onUpdated
                     className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700"
                   >
                     {mod.name}
+                    {mod.linkedFoodItemId && (
+                      <span className="ml-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                        Linked item
+                      </span>
+                    )}
                     {mod.priceDeltaPence !== 0 && (
                       <span className="ml-1 text-slate-500">
                         ({mod.priceDeltaPence > 0 ? "+" : ""}{formatGBP(mod.priceDeltaPence)})

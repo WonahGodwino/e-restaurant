@@ -95,6 +95,7 @@ model Modifier {
   id              String        @id @default(cuid())
   modifierGroupId String
   name            String
+  linkedFoodItemId String?
   priceDeltaPence Int           @default(0)
   isDefault       Boolean       @default(false)
   displayOrder    Int           @default(0)

@@ -14,6 +14,7 @@ type RouteContext = {
 
 const modifierSchema = z.object({
   name: z.string().trim().min(1).max(100),
+  linkedFoodItemId: z.string().trim().optional().or(z.literal("")),
   priceDeltaPence: z.number().int().min(-10000).max(50000).default(0),
   isDefault: z.boolean().default(false),
   displayOrder: z.number().int().min(0).default(0),
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       modifiers: {
         create: input.modifiers.map((mod) => ({
           name: mod.name,
+          linkedFoodItemId: mod.linkedFoodItemId || null,
           priceDeltaPence: mod.priceDeltaPence,
           isDefault: mod.isDefault,
           displayOrder: mod.displayOrder,

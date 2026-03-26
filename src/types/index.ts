@@ -1,6 +1,7 @@
 export type Modifier = {
   id: string;
   name: string;
+  linkedFoodItemId?: string | null;
   priceDeltaPence: number;
   isDefault: boolean;
   displayOrder: number;
