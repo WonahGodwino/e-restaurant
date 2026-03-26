@@ -33,6 +33,7 @@ export default function ReservationsPanel({ adminKey }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [decisionReasonById, setDecisionReasonById] = useState<Record<string, string>>({});
 
   const fetchReservations = useCallback(async () => {
     if (!adminKey) return;
@@ -60,7 +61,14 @@ export default function ReservationsPanel({ adminKey }: Props) {
   }, [fetchReservations]);
 
   async function updateStatus(id: string, status: ReservationStatus) {
+    const decisionReason = (decisionReasonById[id] ?? "").trim();
+    if (status === "CANCELLED" && decisionReason.length < 5) {
+      setError("Please provide a rejection reason (at least 5 characters) before rejecting a reservation.");
+      return;
+    }
+
     setUpdatingId(id);
+    setError(null);
     try {
       const response = await fetch(`/api/admin/reservations/${id}`, {
         method: "PUT",
@@ -68,15 +76,25 @@ export default function ReservationsPanel({ adminKey }: Props) {
           "Content-Type": "application/json",
           "x-admin-key": adminKey,
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, decisionReason }),
       });
       if (response.ok) {
         setReservations((prev) =>
           prev.map((r) => (r.id === id ? { ...r, status } : r)),
         );
+        if (status !== "CANCELLED") {
+          setDecisionReasonById((prev) => ({ ...prev, [id]: "" }));
+        }
+      } else {
+        const payload = await response.json().catch(() => ({}));
+        const fieldErrors = payload.details?.fieldErrors;
+        const firstFieldError = fieldErrors
+          ? Object.values(fieldErrors as Record<string, string[]>).flat()[0]
+          : undefined;
+        setError(firstFieldError ?? payload.error ?? "Failed to update reservation status.");
       }
     } catch {
-      // silent
+      setError("Failed to update reservation status.");
     } finally {
       setUpdatingId(null);
     }
@@ -215,6 +233,24 @@ export default function ReservationsPanel({ adminKey }: Props) {
               >
                 {deletingId === reservation.id ? "Deleting..." : "Delete"}
               </button>
+            </div>
+
+            <div className="mt-3">
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Rejection reason (required only when rejecting)
+              </label>
+              <textarea
+                value={decisionReasonById[reservation.id] ?? ""}
+                onChange={(event) =>
+                  setDecisionReasonById((prev) => ({
+                    ...prev,
+                    [reservation.id]: event.target.value,
+                  }))
+                }
+                rows={2}
+                placeholder="E.g. No availability at requested time; alternative slots are 19:30 or 20:00."
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
+              />
             </div>
           </div>
         ))}

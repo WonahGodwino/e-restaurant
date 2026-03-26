@@ -80,8 +80,8 @@ export default function AdminPage() {
   }, [adminKey, selectedUserId]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-      <header className="rounded-2xl bg-slate-900 px-6 py-8 text-white shadow-md">
+    <div className="admin-light-ui mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      <header className="rounded-2xl border border-slate-700/60 bg-slate-950/85 px-6 py-8 text-white shadow-[0_18px_40px_rgba(2,6,23,0.4)] backdrop-blur-sm">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-2xl font-bold">Restaurant Admin</h1>
           <div className="flex items-center gap-2 rounded-full bg-slate-800 px-3 py-1">
@@ -95,7 +95,7 @@ export default function AdminPage() {
       </header>
 
       {/* Admin Key Section */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">Admin Access</h2>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
           <input
@@ -106,7 +106,7 @@ export default function AdminPage() {
               localStorage.setItem("adminKey", event.target.value);
             }}
             placeholder="Enter ADMIN_DASHBOARD_KEY"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
           />
           <button
             type="button"
@@ -119,83 +119,83 @@ export default function AdminPage() {
       </section>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 overflow-x-auto">
+      <div className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
         <button
           onClick={() => setActiveTab("menu")}
-          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition ${
             activeTab === "menu"
-              ? "border-b-2 border-slate-900 text-slate-900"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-slate-900 text-white shadow-sm"
+              : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
           }`}
         >
           Menu Items
         </button>
         <button
           onClick={() => setActiveTab("orders")}
-          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition ${
             activeTab === "orders"
-              ? "border-b-2 border-green-600 text-green-700"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-emerald-600 text-white shadow-sm"
+              : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
           }`}
         >
           Orders
         </button>
         <button
           onClick={() => setActiveTab("notifications")}
-          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition ${
             activeTab === "notifications"
-              ? "border-b-2 border-orange-600 text-orange-600"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-orange-600 text-white shadow-sm"
+              : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
           }`}
         >
           Stock & Notifications
         </button>
         <button
           onClick={() => setActiveTab("notif-dashboard")}
-          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition ${
             activeTab === "notif-dashboard"
-              ? "border-b-2 border-purple-600 text-purple-600"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-violet-600 text-white shadow-sm"
+              : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
           }`}
         >
           Notif Dashboard {unreadCount > 0 ? `(${unreadCount})` : ""}
         </button>
         <button
           onClick={() => setActiveTab("reservations")}
-          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition ${
             activeTab === "reservations"
-              ? "border-b-2 border-teal-600 text-teal-600"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-teal-600 text-white shadow-sm"
+              : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
           }`}
         >
           Reservations
         </button>
         <button
           onClick={() => setActiveTab("catering")}
-          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition ${
             activeTab === "catering"
-              ? "border-b-2 border-indigo-600 text-indigo-600"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-indigo-600 text-white shadow-sm"
+              : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
           }`}
         >
           Catering
         </button>
         <button
           onClick={() => setActiveTab("users")}
-          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition ${
             activeTab === "users"
-              ? "border-b-2 border-blue-600 text-blue-600"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
           }`}
         >
           Users
         </button>
         <button
           onClick={() => setActiveTab("audit")}
-          className={`px-4 py-3 font-semibold whitespace-nowrap ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition ${
             activeTab === "audit"
-              ? "border-b-2 border-rose-600 text-rose-600"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-rose-600 text-white shadow-sm"
+              : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
           }`}
         >
           Audit Log
@@ -208,7 +208,7 @@ export default function AdminPage() {
       {activeTab === "notifications" && <NotificationPanel adminKey={adminKey} />}
       {activeTab === "notif-dashboard" && (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm">
             <label className="block text-sm font-semibold text-slate-900">
               Select User to View Notifications:
             </label>
@@ -220,7 +220,7 @@ export default function AdminPage() {
                 setSelectedUserId(e.target.value);
                 localStorage.setItem("selectedUserId", e.target.value);
               }}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm"
+              className="mt-2 w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400"
             />
           </div>
           {selectedUserId && (

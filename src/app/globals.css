@@ -59,3 +59,14 @@ a {
 .text-balance {
   text-wrap: balance;
 }
+
+.admin-light-ui input,
+.admin-light-ui textarea,
+.admin-light-ui select {
+  color: #0f172a;
+}
+
+.admin-light-ui input::placeholder,
+.admin-light-ui textarea::placeholder {
+  color: #94a3b8;
+}

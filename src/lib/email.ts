@@ -167,6 +167,40 @@ export function generateCustomerReservationConfirmationEmailTemplate(data: {
   `;
 }
 
+export function generateReservationDecisionEmailTemplate(data: {
+  customerName: string;
+  partySize: number;
+  date: string;
+  time: string;
+  status: "CONFIRMED" | "CANCELLED";
+  reason?: string | null;
+}): string {
+  const isConfirmed = data.status === "CONFIRMED";
+  const heading = isConfirmed
+    ? `Your reservation is confirmed, ${data.customerName}!`
+    : `Update on your reservation request, ${data.customerName}`;
+  const summary = isConfirmed
+    ? "Great news. Your table is now reserved."
+    : "We are sorry, we are unable to confirm this reservation request.";
+  const reasonSection = !isConfirmed && data.reason
+    ? `<p><strong>Reason:</strong> ${data.reason}</p>`
+    : "";
+
+  return `
+    <h2>${heading}</h2>
+    <p>${summary}</p>
+    <h3>Reservation details</h3>
+    <ul>
+      <li><strong>Party size:</strong> ${data.partySize}</li>
+      <li><strong>Date:</strong> ${data.date}</li>
+      <li><strong>Time:</strong> ${data.time}</li>
+      <li><strong>Status:</strong> ${data.status}</li>
+    </ul>
+    ${reasonSection}
+    <p>If you need any assistance, please contact us and we will be glad to help.</p>
+  `;
+}
+
 export function generateCateringRequestEmailTemplate(data: {
   customerName: string;
   customerEmail: string;

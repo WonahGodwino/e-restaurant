@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAuthorised } from "@/lib/auth";
 import { updateReservationStatusSchema } from "@/lib/validators";
+import { notifyAllAdminsAndCooks } from "@/lib/notifications";
+import { generateReservationDecisionEmailTemplate, sendEmail } from "@/lib/email";
 
 export async function PUT(
   request: NextRequest,
@@ -24,10 +26,54 @@ export async function PUT(
       );
     }
 
+    const existingReservation = await db.reservation.findUnique({
+      where: { id },
+    });
+
+    if (!existingReservation) {
+      return NextResponse.json({ error: "Reservation not found." }, { status: 404 });
+    }
+
     const reservation = await db.reservation.update({
       where: { id },
       data: { status: parsed.data.status },
     });
+
+    const decisionReason = parsed.data.decisionReason?.trim() || null;
+    const statusChanged = existingReservation.status !== reservation.status;
+
+    if (statusChanged && (reservation.status === "CONFIRMED" || reservation.status === "CANCELLED")) {
+      const dateText = new Date(reservation.date).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+
+      void sendEmail({
+        to: reservation.customerEmail,
+        subject:
+          reservation.status === "CONFIRMED"
+            ? "Your reservation is confirmed"
+            : "Update on your reservation request",
+        html: generateReservationDecisionEmailTemplate({
+          customerName: reservation.customerName,
+          partySize: reservation.partySize,
+          date: dateText,
+          time: reservation.time,
+          status: reservation.status,
+          reason: decisionReason,
+        }),
+      });
+    }
+
+    if (statusChanged) {
+      const reasonSuffix = decisionReason ? ` Reason: ${decisionReason}` : "";
+      void notifyAllAdminsAndCooks(
+        "NEW_RESERVATION",
+        `Reservation ${reservation.status.toLowerCase()}`,
+        `${reservation.customerName}'s reservation for ${reservation.partySize} on ${new Date(reservation.date).toLocaleDateString("en-GB")} at ${reservation.time} is now ${reservation.status}.${reasonSuffix}`,
+      );
+    }
 
     return NextResponse.json({ reservation });
   } catch (error) {

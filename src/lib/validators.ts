@@ -106,9 +106,20 @@ export const createReservationSchema = z.object({
   specialRequests: z.string().trim().max(1000).optional().or(z.literal("")),
 });
 
-export const updateReservationStatusSchema = z.object({
-  status: z.enum(["PENDING", "CONFIRMED", "CANCELLED"]),
-});
+export const updateReservationStatusSchema = z
+  .object({
+    status: z.enum(["PENDING", "CONFIRMED", "CANCELLED"]),
+    decisionReason: z.string().trim().max(500).optional().or(z.literal("")),
+  })
+  .superRefine((input, ctx) => {
+    if (input.status === "CANCELLED" && (!input.decisionReason || input.decisionReason.trim().length < 5)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["decisionReason"],
+        message: "Please provide a brief rejection reason (at least 5 characters).",
+      });
+    }
+  });
 
 export const createCateringRequestSchema = z.object({
   customerName: z.string().trim().min(2).max(120),
